@@ -1,0 +1,25 @@
+-- Integration-test configuration. Uses an isolated port and in-memory storage.
+root = "./"
+skynet_root = root .. "third_party/skynet/"
+luaservice = root .. "service/?.lua;" .. skynet_root .. "service/?.lua"
+lualoader = skynet_root .. "lualib/loader.lua"
+lua_path = root .. "lualib/?.lua;" .. root .. "lualib/?/init.lua;" .. skynet_root .. "lualib/?.lua;" .. skynet_root .. "lualib/?/init.lua"
+lua_cpath = skynet_root .. "luaclib/?.so"
+cpath = skynet_root .. "cservice/?.so"
+thread = 4
+harbor = 0
+bootstrap = "snlua bootstrap"
+start = "main"
+logger = nil
+logpath = "."
+gate_host = "127.0.0.1"
+gate_port = 18888
+max_client = 128
+debug_console_port = 0
+storage_driver = "memory"
+storage_pool = 2
+db_host = "127.0.0.1"
+db_port = 3306
+db_name = "mmo"
+db_user = "mmo"
+db_password = "123456"

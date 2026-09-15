@@ -1,0 +1,8 @@
+third_party/skynet/
+third_party/luapanda/
+third_party/luasocket/
+third_party/luapanda-runtime/
+*.log
+*.pid
+.vscode/.ropeproject/
+.tmp/

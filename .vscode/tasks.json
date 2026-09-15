@@ -1,0 +1,91 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Skynet MMO：拉取 v1.8.0",
+      "type": "shell",
+      "command": "./scripts/bootstrap_skynet.sh",
+      "windows": {
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}\\scripts\\windows\\bootstrap.ps1"]
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Skynet MMO：构建",
+      "type": "shell",
+      "command": "./scripts/linux/build.sh",
+      "windows": {
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}\\scripts\\windows\\build.ps1"]
+      },
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Skynet MMO：完整测试",
+      "type": "shell",
+      "command": "./scripts/linux/test.sh",
+      "windows": {
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}\\scripts\\windows\\test.ps1"]
+      },
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Skynet MMO：准备 LuaPanda 调试环境",
+      "type": "shell",
+      "command": "./scripts/linux/build_luapanda.sh",
+      "windows": {
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}\\scripts\\windows\\build_luapanda.ps1"]
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Skynet MMO：启动服务器",
+      "type": "shell",
+      "command": "./scripts/linux/run_server.sh",
+      "windows": {
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}\\scripts\\windows\\run_server.ps1"]
+      },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Skynet MMO：连接 Debug Console",
+      "type": "shell",
+      "command": "./scripts/linux/debug_console.sh",
+      "windows": {
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}\\scripts\\windows\\debug_console.ps1"]
+      },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Skynet MMO：启动交互客户端",
+      "type": "shell",
+      "command": "./scripts/linux/run_client.sh",
+      "windows": {
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}\\scripts\\windows\\run_client.ps1"]
+      },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Skynet MMO：启动自动客户端",
+      "type": "shell",
+      "command": "./scripts/linux/run_client.sh --auto",
+      "windows": {
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}\\scripts\\windows\\run_client.ps1", "-Auto"]
+      },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Skynet Lua：LuaPanda 调试 Scene",
+      "type": "lua",
+      "request": "launch",
+      "tag": "normal",
+      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}/scripts/linux/run_luapanda_server.sh",
+      "args": ["scene/scene", "8818"],
+      "connectionPort": 8818,
+      "stopOnEntry": false,
+      "useCHook": false,
+      "autoPathMode": true,
+      "pathCaseSensitivity": true,
+      "isNeedB64EncodeStr": true,
+      "autoReconnect": false,
+      "logLevel": 1,
+      "preLaunchTask": "Skynet MMO：准备 LuaPanda 调试环境"
+    },
+    {
+      "name": "Skynet Lua：LuaPanda 调试 PlayerAgent",
+      "type": "lua",
+      "request": "launch",
+      "tag": "normal",
+      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}/scripts/linux/run_luapanda_server.sh",
+      "args": ["player/player_agent", "8818"],
+      "connectionPort": 8818,
+      "stopOnEntry": false,
+      "useCHook": false,
+      "autoPathMode": true,
+      "pathCaseSensitivity": true,
+      "isNeedB64EncodeStr": true,
+      "autoReconnect": false,
+      "logLevel": 1,
+      "preLaunchTask": "Skynet MMO：准备 LuaPanda 调试环境"
+    },
+    {
+      "name": "Skynet Runtime：GDB 启动服务器（WSL/Linux）",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/third_party/skynet/skynet",
+      "args": ["config/game.lua"],
+      "cwd": "${workspaceFolder}",
+      "stopAtEntry": false,
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "setupCommands": [
+        {
+          "description": "启用 GDB pretty-printing",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "Skynet MMO：构建"
+    }
+  ]
+}

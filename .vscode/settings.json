@@ -1,0 +1,24 @@
+{
+  "files.exclude": {
+    "third_party/skynet/.git": true
+  },
+  "files.associations": {
+    "*.lua": "lua"
+  },
+  "Lua.runtime.version": "Lua 5.4",
+  "Lua.runtime.path": [
+    "?.lua",
+    "?/init.lua",
+    "lualib/?.lua",
+    "lualib/?/init.lua",
+    "third_party/skynet/lualib/?.lua",
+    "third_party/skynet/lualib/?/init.lua"
+  ],
+  "Lua.workspace.library": [
+    "${workspaceFolder}/lualib",
+    "${workspaceFolder}/third_party/skynet/lualib"
+  ],
+  "Lua.workspace.checkThirdParty": false,
+  "Lua.telemetry.enable": false,
+  "lua_analyzer.codeLinting.enable": false
+}
