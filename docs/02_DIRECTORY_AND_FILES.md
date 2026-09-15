@@ -14,6 +14,13 @@
 - `docs/16_DEBUGGING.md` - LuaPanda、Debug Console、GDB 与生产诊断边界。
 - `docs/Skynet第一课_启动链源码导读_重写版.pdf` - 第一课：从 Native Build Artifact、配置解析到 `service/main.lua` 的完整启动链。
 - `docs/Skynet第二课_Service模型与Actor架构.md` - 第二课可编辑教材；同名 PDF 是发布版。
+- `docs/Skynet第三课_完整MMO业务闭环与一致性.md` - 第三课可编辑教材；发布版位于 `output/pdf/`。
+- `docs/Skynet第四课_生产工程故障诊断与性能.md` - 第四课可编辑教材；发布版位于 `output/pdf/`。
+
+## output
+
+- `output/pdf/Skynet第三课_完整MMO业务闭环与一致性.pdf` - 第三课 41 页 A4 发布版。
+- `output/pdf/Skynet第四课_生产工程故障诊断与性能.pdf` - 第四课 38 页 A4 发布版。
 
 ## .vscode
 

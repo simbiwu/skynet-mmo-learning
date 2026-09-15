@@ -38,6 +38,8 @@
 ./docs/Skynet第一课_启动链源码导读_重写版.pdf
 ./docs/Skynet第二课_Service模型与Actor架构.md
 ./docs/Skynet第二课_Service模型与Actor架构.pdf
+./docs/Skynet第三课_完整MMO业务闭环与一致性.md
+./docs/Skynet第四课_生产工程故障诊断与性能.md
 ./lualib/debug/luapanda_preload.lua
 ./lualib/config/game_data.lua
 ./lualib/protocol/frame.lua
@@ -45,6 +47,8 @@
 ./lualib/scene/aoi_grid.lua
 ./lualib/scene/combat.lua
 ./lualib/scene/movement.lua
+./output/pdf/Skynet第三课_完整MMO业务闭环与一致性.pdf
+./output/pdf/Skynet第四课_生产工程故障诊断与性能.pdf
 ./scripts/bootstrap_skynet.sh
 ./scripts/bootstrap_luapanda.sh
 ./scripts/docs/build_course_pdf.py

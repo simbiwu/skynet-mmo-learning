@@ -37,6 +37,8 @@
 
 ## 第三课：完整 MMO 业务闭环与一致性
 
+主教材：[`Skynet第三课_完整MMO业务闭环与一致性.md`](Skynet第三课_完整MMO业务闭环与一致性.md)；[发布版 PDF](../output/pdf/Skynet第三课_完整MMO业务闭环与一致性.pdf)。
+
 以登录、重连、进场、AOI、移动、战斗、掉线保存为连续业务链，学习如何把 Service 模型变成可维护的 MMO 架构。主题包括 PlayerAgent 生命周期、Scene 分片、AOI 与 Tick Budget、Sproto 协议边界、内存/MySQL 存储、幂等与超时、跨 Service 事务取舍、优雅停服和状态恢复。
 
 能力验收：
@@ -49,6 +51,8 @@
 配套专题：`docs/04_LOGIN_FLOW.md`、`docs/05_SCENE_AOI_COMBAT.md`、`docs/06_PROTOCOL.md`、`docs/07_STORAGE.md`、`docs/15_P0_AUTHORITATIVE_MOVEMENT.md`。
 
 ## 第四课：生产工程、故障诊断与性能
+
+主教材：[`Skynet第四课_生产工程故障诊断与性能.md`](Skynet第四课_生产工程故障诊断与性能.md)；[发布版 PDF](../output/pdf/Skynet第四课_生产工程故障诊断与性能.pdf)。
 
 把样例工程放进真实环境审视：结构化日志与 Trace/Context ID、Service 状态检查、Mailbox/延迟指标、录制回放、压测模型、Lua/C Profiling、Core Dump、GDB、容量规划、灰度与回滚。区分个人、共享、Staging 和 Production 环境中允许使用的工具与操作。
 

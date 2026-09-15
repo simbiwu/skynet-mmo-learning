@@ -80,6 +80,10 @@ Lua 业务图形调试使用 VS Code + LuaPanda。运行 task `Skynet MMO：准�
 
 第一课使用 `docs/Skynet第一课_启动链源码导读_重写版.pdf`；第二课使用 `docs/Skynet第二课_Service模型与Actor架构.md` 或同名 PDF，进入 Service、Mailbox、Worker、coroutine 重入、状态所有权和 Actor 边界。
 
+第三课使用 `docs/Skynet第三课_完整MMO业务闭环与一致性.md` 或 `output/pdf/` 下的发布版 PDF，沿登录、重连、进场、移动、AOI、战斗和离线持久化审查完整业务状态机。
+
+第四课使用 `docs/Skynet第四课_生产工程故障诊断与性能.md` 或 `output/pdf/` 下的发布版 PDF，建立结构化日志、Metric、Trace、Profile、Core Dump、Record/Replay、容量规划、灰度与回滚的生产证据链。
+
 ## 当前新增 P0
 
 服务端现在拥有并校验角色的实时移动：越界和超速请求不会进入 AOI，也不会污染持久化坐标。设计、Coroutine/yield 审查和错误语义见 `docs/15_P0_AUTHORITATIVE_MOVEMENT.md`。

@@ -152,8 +152,8 @@ Lua Language Server 负责补全、跳转和静态检查；LuaPanda 负责运行
 
 1. 第一课：启动链、构建与调试工具链。主教材 `docs/Skynet第一课_启动链源码导读_重写版.pdf`。
 2. 第二课：Service 模型与 Actor 架构。主教材 `docs/Skynet第二课_Service模型与Actor架构.md` 及同名 PDF。
-3. 第三课：完整 MMO 业务闭环与一致性。
-4. 第四课：生产工程、故障诊断与性能。
+3. 第三课：完整 MMO 业务闭环与一致性。主教材 `docs/Skynet第三课_完整MMO业务闭环与一致性.md` 及 `output/pdf/` 下的发布版 PDF。
+4. 第四课：生产工程、故障诊断与性能。主教材 `docs/Skynet第四课_生产工程故障诊断与性能.md` 及 `output/pdf/` 下的发布版 PDF。
 
 当前应在第一课的环境、启动链和断点验收完成后进入第二课；不要跳过 Service coroutine 重入与状态所有权，直接开始堆业务系统。
 
@@ -171,6 +171,8 @@ Lua Language Server 负责补全、跳转和静态检查；LuaPanda 负责运行
 - 四课统一目录：`docs/COURSE_CATALOG.md`
 - 第一课启动链源码教材：`docs/Skynet第一课_启动链源码导读_重写版.pdf`
 - 第二课 Service/Actor 教材：`docs/Skynet第二课_Service模型与Actor架构.md` 或同名 PDF
+- 第三课完整业务闭环教材：`docs/Skynet第三课_完整MMO业务闭环与一致性.md` 或 `output/pdf/` 下的同名 PDF
+- 第四课生产工程教材：`docs/Skynet第四课_生产工程故障诊断与性能.md` 或 `output/pdf/` 下的同名 PDF
 - MySQL 存储：`docs/07_STORAGE.md`
 - 测试和 benchmark：`docs/08_TESTING_AND_BENCHMARK.md`
 - 已知生产差距：`docs/13_PRODUCTION_GAPS.md`

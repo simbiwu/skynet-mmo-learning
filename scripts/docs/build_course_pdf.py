@@ -169,7 +169,9 @@ def make_styles() -> dict[str, ParagraphStyle]:
         ),
         "code": ParagraphStyle(
             "Code",
-            fontName="Courier",
+            # 课程的伪代码和诊断输出中包含中文。Courier 不含 CJK Glyph，
+            # Poppler 文本抽取会得到方块；统一使用已嵌入的中文 TrueType 字体。
+            fontName="NotoSansCJKSC",
             fontSize=7.6,
             leading=11,
             leftIndent=4 * mm,
@@ -190,11 +192,19 @@ def make_styles() -> dict[str, ParagraphStyle]:
             textColor=BLUE,
             spaceAfter=10,
         ),
+        "top_guard": ParagraphStyle(
+            "TopGuard",
+            fontName="NotoSansCJKSC",
+            fontSize=1,
+            leading=1,
+            textColor=colors.white,
+            spaceAfter=0,
+        ),
     }
 
 
 class CourseDocTemplate(BaseDocTemplate):
-    def __init__(self, filename: str, course_header: str):
+    def __init__(self, filename: str, course_header: str, subject: str):
         super().__init__(
             filename,
             pagesize=A4,
@@ -204,7 +214,7 @@ class CourseDocTemplate(BaseDocTemplate):
             bottomMargin=18 * mm,
             title=course_header,
             author="Skynet MMO Learning",
-            subject="Skynet Service 模型与 Actor 架构",
+            subject=subject,
         )
         self.course_header = course_header
         frame = Frame(
@@ -214,7 +224,9 @@ class CourseDocTemplate(BaseDocTemplate):
             self.height,
             id="course",
         )
-        self.addPageTemplates(PageTemplate(id="normal", frames=frame, onPage=self.draw_page))
+        # 页眉页脚在 Flowable 完成后绘制。长表格或 keepWithNext 组合偶尔会
+        # 覆盖先绘制的页眉；onPageEnd 能保证发布版每页的导航信息一致。
+        self.addPageTemplates(PageTemplate(id="normal", frames=frame, onPageEnd=self.draw_page))
 
     def draw_page(self, canvas, doc) -> None:
         canvas.saveState()
@@ -324,6 +336,9 @@ def markdown_to_story(source: Path, styles: dict[str, ParagraphStyle]) -> tuple[
             if not first_h2:
                 story.append(PageBreak())
             first_h2 = False
+            # 一个真实 Paragraph 可阻止 keepWithNext 组合在个别“整页刚好容纳”
+            # 的章节越过 Frame 上边界；普通 Spacer 在页首会被 ReportLab 丢弃。
+            story.append(Paragraph("&#160;", styles["top_guard"]))
             story.append(Paragraph(inline_markup(stripped[3:]), styles["h2"]))
         elif stripped.startswith("### "):
             flush_paragraph()
@@ -371,13 +386,14 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("source", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--header", help="页眉；默认使用课程完整标题")
     args = parser.parse_args()
 
     register_fonts()
     styles = make_styles()
     title, story = markdown_to_story(args.source, styles)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    doc = CourseDocTemplate(str(args.output), "Skynet MMO Learning · 第二课 · Service 模型与 Actor 架构")
+    doc = CourseDocTemplate(str(args.output), args.header or title, title)
     doc.multiBuild(story)
     print(f"generated: {args.output} ({args.output.stat().st_size} bytes) title={title}")
 
