@@ -74,9 +74,11 @@ Second PowerShell window:
 .\scripts\windows\run_client.ps1
 ```
 
-第一次使用只需从 `docs/00_READ_ME_FIRST.md` 开始；它包含 Windows/WSL2 安装、运行、调试入口和按能力验收的生产向学习路线，不设固定学习周期。遇到具体问题时再进入专题文档。
+课程主线统一从 `docs/COURSE_CATALOG.md` 进入，完整教学只分四课，不设固定学习周期。第一次配置机器时配合 `docs/00_READ_ME_FIRST.md` 操作；其他编号文档是专题手册，不要求按编号逐份阅读。
 
 Lua 业务图形调试使用 VS Code + LuaPanda。运行 task `Skynet MMO：准备 LuaPanda 调试环境` 后，在“运行和调试”中选择 Scene 或 PlayerAgent；完整过程见 `docs/16_DEBUGGING.md`。正常服务器、自动测试和生产配置不会加载 LuaPanda。
+
+第一课使用 `docs/Skynet第一课_启动链源码导读_重写版.pdf`；第二课使用 `docs/Skynet第二课_Service模型与Actor架构.md` 或同名 PDF，进入 Service、Mailbox、Worker、coroutine 重入、状态所有权和 Actor 边界。
 
 ## 当前新增 P0
 

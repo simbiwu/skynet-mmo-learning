@@ -6,3 +6,6 @@ third_party/luapanda-runtime/
 *.pid
 .vscode/.ropeproject/
 .tmp/
+tmp/
+__pycache__/
+*.pyc

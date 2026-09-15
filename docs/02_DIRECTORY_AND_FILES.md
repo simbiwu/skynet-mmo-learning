@@ -7,6 +7,14 @@
 - `Makefile` - Linux/WSL convenience targets.
 - `compose.mysql.yml` - optional MySQL 8.4 development container.
 
+## 学习主线文档
+
+- `docs/COURSE_CATALOG.md` - 四课唯一课程目录与按能力验收的学习路线。
+- `docs/00_READ_ME_FIRST.md` - 首次构建、运行和调试的环境操作入口。
+- `docs/16_DEBUGGING.md` - LuaPanda、Debug Console、GDB 与生产诊断边界。
+- `docs/Skynet第一课_启动链源码导读_重写版.pdf` - 第一课：从 Native Build Artifact、配置解析到 `service/main.lua` 的完整启动链。
+- `docs/Skynet第二课_Service模型与Actor架构.md` - 第二课可编辑教材；同名 PDF 是发布版。
+
 ## .vscode
 
 - `settings.json` - Lua 5.4 与项目/Skynet module 搜索路径。
@@ -58,6 +66,8 @@
 - `tests/integration/smoke.sh` - starts real Skynet, logs in, attacks and kills a monster.
 - `tests/benchmark/aoi_bench.lua` - candidate-query benchmark.
 - `tests/tooling/test_luapanda_runtime.sh` - 验证 LuaSocket 产物布局及 Bundled Lua 5.4.7 加载兼容性。
+- `tests/tooling/test_luapanda_preload_order.lua` - 保证 LuaPanda 先包装 Coroutine，再加载会缓存 `coroutine.create` 的 Skynet Runtime。
+- `tests/tooling/test_client_stdin.lua` - 保证交互客户端只消费 `client.socket` 的 stdin Queue，不与其 C pthread 竞争 TTY。
 - `tests/tooling/test_windows_wslpath.ps1` - 防止 PowerShell 5.1 向 `wslpath` 传递反斜杠路径时发生转义回归。
 
 ## scripts
@@ -68,5 +78,6 @@
 - `scripts/linux/build_luapanda.sh` - 针对 Skynet Bundled Lua Header 构建 `socket.core`。
 - `scripts/linux/run_luapanda_server.sh` - 设置单一目标 Service 并启动 Dev-only Debug 配置。
 - `scripts/linux/debug_console.sh` - 通过 `nc` 连接 Skynet Debug Console。
+- `scripts/docs/build_course_pdf.py` - 将课程 Markdown 渲染为统一 A4 PDF；需要 WSL 的 `python3-reportlab` 与 `fonts-wqy-microhei`。
 - `scripts/windows/*` - PowerShell wrappers that execute the Linux scripts through WSL2.
 - `scripts/windows/debug_console.ps1` - Windows 到 WSL2 Debug Console 的入口。

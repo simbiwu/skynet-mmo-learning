@@ -18,6 +18,7 @@
 ./config/game.lua
 ./config/test.lua
 ./docs/00_READ_ME_FIRST.md
+./docs/COURSE_CATALOG.md
 ./docs/01_ARCHITECTURE.md
 ./docs/02_DIRECTORY_AND_FILES.md
 ./docs/03_SKYNET_CORE_API.md
@@ -34,6 +35,9 @@
 ./docs/14_OFFICIAL_REFERENCES.md
 ./docs/15_P0_AUTHORITATIVE_MOVEMENT.md
 ./docs/16_DEBUGGING.md
+./docs/Skynet第一课_启动链源码导读_重写版.pdf
+./docs/Skynet第二课_Service模型与Actor架构.md
+./docs/Skynet第二课_Service模型与Actor架构.pdf
 ./lualib/debug/luapanda_preload.lua
 ./lualib/config/game_data.lua
 ./lualib/protocol/frame.lua
@@ -43,6 +47,7 @@
 ./lualib/scene/movement.lua
 ./scripts/bootstrap_skynet.sh
 ./scripts/bootstrap_luapanda.sh
+./scripts/docs/build_course_pdf.py
 ./scripts/linux/benchmark_aoi.sh
 ./scripts/linux/build.sh
 ./scripts/linux/build_luapanda.sh

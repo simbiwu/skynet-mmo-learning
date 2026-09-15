@@ -1,6 +1,6 @@
 # 00 - 从这里开始：构建、调试与生产向学习路线
 
-这是一份唯一的入门入口。第一次接触工程时只阅读并执行本文即可；其他文档是专题参考，不要求现在逐份打开。
+这是一份环境操作入口。完整四课主线与能力验收统一见 `docs/COURSE_CATALOG.md`；第一次接触工程时执行本文的构建、运行和调试步骤即可，其他编号文档是专题参考，不要求逐份打开。
 
 ## 学习者定位
 
@@ -146,70 +146,16 @@ stat
 
 Lua Language Server 负责补全、跳转和静态检查；LuaPanda 负责运行期断点，两者职责不同。第一次使用 LuaPanda 前运行 task `Skynet MMO：准备 LuaPanda 调试环境`，随后在“运行和调试”中选择 Scene 或 PlayerAgent Configuration。详细配置、接入链路、限制与故障排查见 `docs/16_DEBUGGING.md`。
 
-## 生产向学习路线
+## 四课生产向学习主线
 
-本路线不设天数、周数或赶进度目标。每一阶段都按照“能解释、能操作、能调试、能验证”的标准验收；没有形成可靠心智模型时不急于进入下一阶段。讲解从可观察现象进入实现源码，逐层深入，但不牺牲生产级严谨性。
+课程不按天数推进，每课都以“能解释、能操作、能调试、能验证”为完成标准。详细章节、配套专题和验收项集中在 `docs/COURSE_CATALOG.md`，这里不再维护第二份分散目录。
 
-### 第一阶段：构建链和产物
+1. 第一课：启动链、构建与调试工具链。主教材 `docs/Skynet第一课_启动链源码导读_重写版.pdf`。
+2. 第二课：Service 模型与 Actor 架构。主教材 `docs/Skynet第二课_Service模型与Actor架构.md` 及同名 PDF。
+3. 第三课：完整 MMO 业务闭环与一致性。
+4. 第四课：生产工程、故障诊断与性能。
 
-不把 `make linux` 当作黑盒。需要掌握：
-
-- 官方 Skynet v1.8.0 及 Submodule 如何固定；
-- GCC、Make、Bundled Lua 5.4.7 和 jemalloc 分别参与哪一步；
-- `skynet`、`cservice/*.so`、`luaclib/*.so` 和 Lua 源码各自如何产生、加载；
-- 为什么业务 Lua 修改通常只需重启，而 C Runtime 修改需要重新构建；
-- VS Code Task、Windows wrapper、WSL Bash 脚本之间的调用关系。
-
-验收动作：完成一次 Clean Build 观察全量产物，再修改一个 Lua Service 和一个受控的 C Runtime 位置，比较两条迭代路径。任何源码实验都应保留可恢复性，不直接污染固定的上游基线。
-
-### 第二阶段：启动链和调试链
-
-从下面的真实启动命令开始：
-
-```bash
-./third_party/skynet/skynet config/game.lua
-```
-
-跟踪 `config/game.lua`、Skynet `bootstrap`、`service/main.lua` 到业务 Service 的创建顺序。随后分别练习：
-
-- 用 Debug Console 检查 Service、Mailbox 和 Coroutine；
-- 用 GDB 启动 Skynet、设置 C 断点、查看线程和调用栈；
-- 对纯 Lua 逻辑运行可复现测试并建立源码断点能力；
-- 制造启动失败、协议错误、RPC 等待和进程崩溃，区分各自的证据与诊断工具。
-
-这一阶段不是只学命令，而是建立调试决策：什么问题使用断点，什么问题使用 Trace，什么问题必须通过录制回放或 Core Dump 分析。
-
-### 第三阶段：Runtime 与完整请求链
-
-沿下面的顺序找到对应文件：
-
-```text
-main.lua
-  -> watchdog.lua
-  -> auth.lua
-  -> player_mgr.lua
-  -> player_agent.lua
-  -> scene_mgr.lua
-  -> scene.lua
-```
-
-同时进入 Skynet Runtime 源码，理解 Global Queue、Service Message Queue、Worker Thread、Service Handle、Session 和 Coroutine Response。学习 `skynet.start`、`newservice`、`dispatch`、`call`、`send`、`timeout` 和 `queue`，但重点不是背 API，而是还原一次请求的调度与恢复路径。
-
-这一阶段配合阅读 `docs/01_ARCHITECTURE.md`、`docs/03_SKYNET_CORE_API.md`、`docs/04_LOGIN_FLOW.md` 和 `docs/06_COROUTINE_AND_CONCURRENCY.md`。
-
-### 第四阶段：状态所有权与并发正确性
-
-跟踪登录、重复登录、断线、60 秒重连窗口和退出保存，理解 `fd + connection_id` 为什么要一起校验，以及 PlayerAgent 为什么按玩家串行处理业务请求。
-
-继续审查 Scene 为什么拥有实时坐标、AOI 和怪物 HP，PlayerAgent 为什么只保存持久化快照。所有 Service 修改都要列出状态所有者、yield 点、恢复后的陈旧状态、`call`/`send` 选择、Hot Actor 风险和 Generation Check。
-
-这一阶段阅读 `docs/05_SCENE_AOI_COMBAT.md` 和 `docs/15_P0_AUTHORITATIVE_MOVEMENT.md`。
-
-### 第五阶段：生产工程与性能
-
-建设结构化日志、Trace Context、Service 状态快照、消息队列和 RPC 延迟指标、网络/业务事件录制回放、故障注入与自动化机器人。学习 memory/MySQL Worker 分片、最终保存、integration smoke test 和 AOI Benchmark，并从观测数据而不是 Lua 性能假设出发优化。
-
-最后结合 `docs/13_PRODUCTION_GAPS.md` 做一次投产评审，明确单节点容量、故障域、重启恢复、灰度兼容和仍未闭合的风险。
+当前应在第一课的环境、启动链和断点验收完成后进入第二课；不要跳过 Service coroutine 重入与状态所有权，直接开始堆业务系统。
 
 ## 始终牢记的三条规则
 
@@ -222,6 +168,9 @@ main.lua
 - Windows/Ubuntu 安装失败：`docs/09_WINDOWS_WSL2.md`
 - Linux 主机部署：`docs/10_LINUX.md`
 - 逐行调试或 GDB：`docs/16_DEBUGGING.md`
+- 四课统一目录：`docs/COURSE_CATALOG.md`
+- 第一课启动链源码教材：`docs/Skynet第一课_启动链源码导读_重写版.pdf`
+- 第二课 Service/Actor 教材：`docs/Skynet第二课_Service模型与Actor架构.md` 或同名 PDF
 - MySQL 存储：`docs/07_STORAGE.md`
 - 测试和 benchmark：`docs/08_TESTING_AND_BENCHMARK.md`
 - 已知生产差距：`docs/13_PRODUCTION_GAPS.md`
