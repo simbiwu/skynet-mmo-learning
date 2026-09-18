@@ -8,6 +8,8 @@
 
 主教材：[`Skynet第一课_启动链源码导读_重写版.pdf`](Skynet第一课_启动链源码导读_重写版.pdf)
 
+配套实操：[`Skynet第一课_启动链源码导读_实操.md`](Skynet第一课_启动链源码导读_实操.md)
+
 从 `./third_party/skynet/skynet config/game.lua` 出发，建立第一张完整运行时地图：Native Build Artifact、配置临时 Lua State、`skynet_start`、Worker Thread、`snlua`、`loader.lua`、官方 `bootstrap.lua`，最终到项目 `service/main.lua`。同时完成 Windows VS Code + WSL2、LuaPanda、Debug Console 与 GDB 的开发环境闭环。
 
 能力验收：
@@ -21,7 +23,9 @@
 
 ## 第二课：Service 模型与 Actor 架构
 
-主教材：[`Skynet第二课_Service模型与Actor架构.md`](Skynet第二课_Service模型与Actor架构.md)；发布版 PDF 与本文档同目录。
+主教材：[`Skynet第二课_Service模型与MMO_Actor架构_重写版.md`](Skynet第二课_Service模型与MMO_Actor架构_重写版.md)
+
+配套实操：[`Skynet第二课_Service模型与MMO_Actor架构_实操.md`](Skynet第二课_Service模型与MMO_Actor架构_实操.md)
 
 从 `skynet_context`、Service 私有 Mailbox、Global Queue 和 Worker 调度开始，建立 Skynet Service 的准确语义。重点纠正“一个 Service 等于一个永不重入的单线程游戏循环”这一危险类比：消息处理 coroutine 一旦在 `skynet.call` 等位置 yield，同一 Service 的其他消息就可以继续执行并修改共享状态。
 
@@ -37,7 +41,9 @@
 
 ## 第三课：完整 MMO 业务闭环与一致性
 
-主教材：[`Skynet第三课_完整MMO业务闭环与一致性.md`](Skynet第三课_完整MMO业务闭环与一致性.md)；[发布版 PDF](../output/pdf/Skynet第三课_完整MMO业务闭环与一致性.pdf)。
+主教材：[`Skynet第三课_Scene九宫格AOI_Monster与Combat_重写版.md`](Skynet第三课_Scene九宫格AOI_Monster与Combat_重写版.md)
+
+配套实操：[`Skynet第三课_Scene九宫格AOI_Monster与Combat_实操.md`](Skynet第三课_Scene九宫格AOI_Monster与Combat_实操.md)
 
 以登录、重连、进场、AOI、移动、战斗、掉线保存为连续业务链，学习如何把 Service 模型变成可维护的 MMO 架构。主题包括 PlayerAgent 生命周期、Scene 分片、AOI 与 Tick Budget、Sproto 协议边界、内存/MySQL 存储、幂等与超时、跨 Service 事务取舍、优雅停服和状态恢复。
 
@@ -52,7 +58,9 @@
 
 ## 第四课：生产工程、故障诊断与性能
 
-主教材：[`Skynet第四课_生产工程故障诊断与性能.md`](Skynet第四课_生产工程故障诊断与性能.md)；[发布版 PDF](../output/pdf/Skynet第四课_生产工程故障诊断与性能.pdf)。
+主教材：[`Skynet第四课_商业MMO生产架构_Cluster持久化热更GC监控与上线_完整版.md`](Skynet第四课_商业MMO生产架构_Cluster持久化热更GC监控与上线_完整版.md)
+
+配套实操：[`Skynet第四课_商业MMO生产架构_实操.md`](Skynet第四课_商业MMO生产架构_实操.md)
 
 把样例工程放进真实环境审视：结构化日志与 Trace/Context ID、Service 状态检查、Mailbox/延迟指标、录制回放、压测模型、Lua/C Profiling、Core Dump、GDB、容量规划、灰度与回滚。区分个人、共享、Staging 和 Production 环境中允许使用的工具与操作。
 
