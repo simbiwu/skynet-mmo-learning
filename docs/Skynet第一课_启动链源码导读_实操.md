@@ -1060,19 +1060,37 @@ git push -u origin feature/login
 
 本课使用 Sproto。TCP 是 Byte Stream，一次 `send` 与一次 `recv` 没有消息边界，所以每个 Sproto Payload 前放置 2-byte big-endian 长度。官方 Gate 按同样的 `s2` 形式切包，Client 也必须使用相同规则。
 
+先把网络上的三层数据分开。后面抓包或移植 Unity/H5 Client 时，不能把三层的长度、端序和职责混在一起：
+
+```text
+TCP Frame
+  [2-byte big-endian payload length]
+    ↓ payload
+Sproto RPC Envelope（.package）
+  [type][session]
+    ↓ request/response body
+业务结构
+  login.request 或 login.response
+```
+
+最外层两字节由本工程与官方 Gate 的 Netpack 约定，用大端序表示 TCP Frame 长度。拆包代码位于 `third_party/skynet/lualib-src/lua-netpack.c` 的 `read_size` 和 `filter_data_`。Sproto 自己的 16/32/64 位字段、字符串长度和数组长度使用小端序，编码实现位于 `third_party/skynet/lualib-src/sproto/sproto.c` 的 `sproto_encode`、`sproto_decode`、`encode_array` 和 `decode_array`。一个 Packet 同时出现两种端序是正常结果：外层 Frame 属于 Transport，内层字段属于 Sproto Wire Format。
+
 ### 9.1 `lualib/protocol/schema.lua`
 
 ```lua
--- Client/Server 共用的 Sproto 文本。Sproto Parser 直接解析字符串，
--- 不要在 [[...]] 内写 Lua 注释。
+-- 当前 Lua Client 与 Server 读取同一份 Sproto Schema 源定义。
+-- [[...]] 是 Lua Long String Literal，不是注释；--[[...]] 才是 Lua Block Comment。
+-- Long String 内部按 Sproto Grammar 解析，行注释使用 #，不能使用 Lua 的 --。
 local M = {}
 
 M.c2s = [[
+# Sproto Package Header：type 标识协议，session 关联 Request 与 Response。
 .package {
     type 0 : integer
     session 1 : integer
 }
 
+# 第一阶段的 Client -> Server 登录协议，协议 ID 为 1。
 login 1 {
     request {
         player_id 0 : integer
@@ -1092,6 +1110,7 @@ login 1 {
 -- 第一阶段没有 Server Push，但仍建立独立 S2C Schema，后续 AOI、Chat、
 -- Kick 等 Push 直接增加在这里，不改变 Client host/attach 方向。
 M.s2c = [[
+# S2C 使用独立 Package，后续 Server Push 都在这个 Schema 中定义。
 .package {
     type 0 : integer
     session 1 : integer
@@ -1101,7 +1120,83 @@ M.s2c = [[
 return M
 ```
 
+这里有两层 Parser，注释语法由当前处理这一层文本的 Parser 决定：
+
+```text
+Lua Parser
+  读取 lualib/protocol/schema.lua
+  把 [[...]] 构造成普通 Lua String
+  此时 String 内的 # 和 -- 都只是字符
+
+Sproto Parser
+  sprotoparser.parse(schema.c2s)
+  按 Sproto Grammar 解析这段 String
+  只把 # 到行尾识别为注释
+```
+
+Lua 的两种写法不要混淆：
+
+```lua
+-- 这是 Lua 单行注释
+
+--[[
+这是 Lua 块注释
+]]
+
+local text = [[
+这是一段 Lua Long String，不是注释
+]]
+```
+
+`[[...]]` 在整个 Lua 5.x 系列中都可用，Lua 5.0 已经支持这种写法。本工程使用 Skynet Bundled Modified Lua 5.4.7。Lua 5.1 开始还可以使用带等号层级的 Long Bracket，例如 `[=[...]=]`、`[==[...]==]`；当字符串正文自身包含 `]]` 时，用更高层级可以避免提前结束字符串：
+
+```lua
+local text = [=[
+正文可以包含普通的 ]]
+只有 ]=] 才会结束当前 Long String
+]=]
+```
+
+选择 Long String 是因为 Sproto Schema 本身是多行 DSL。使用 `[[...]]` 可以保留换行，也不需要给每一行加引号和 `\n`。Lua 完成这一层解析后，`M.c2s` 就是一个普通字符串，稍后由 `service/protocol/protoloader.lua` 传给 `sprotoparser.parse`。
+
+下面写法会失败：
+
+```lua
+M.c2s = [[
+-- 这里不是 Lua 注释；两个减号会原样进入 Sproto Parser
+.package {
+    type 0 : integer
+    session 1 : integer
+}
+]]
+```
+
+原因是 Lua Parser 不会进入 Long String 内部寻找注释。Sproto Parser 收到 `-- 这里不是 Lua 注释`，而它的 Grammar 不接受以 `-` 开头的 Token，最终报告 Syntax Error。
+
+正确的 Sproto 注释写法是：
+
+```sproto
+# 这一行由 Sproto Parser 忽略
+.package {
+    type 0 : integer   # Inline Comment 也使用井号
+    session 1 : integer
+}
+```
+
+这不是课程自行约定的格式。`third_party/skynet/lualib/sprotoparser.lua` 中的 `line_comment` 明确定义为从 `#` 开始，一直读取到换行或文件结尾；`sparser.parse` 使用这套 Grammar 解析传入字符串。
+
 `.package` 的 `type` 标识协议编号，`session` 把 Response 对回 Request。`login 1` 中的 `1` 是 C2S 协议 ID。字段后面的数字是 Sproto Field Tag；上线协议不能随意复用或改变已有 Tag。
+
+这里说的“共用”只适用于本课的 Lua Test Client：它和 Server 都能 `require "protocol.schema"`。Unity 或 H5 无法加载这个 Lua Module。商业工程通常保留一份权威 `.sproto` 源定义，再由构建工具为各端生成产物：
+
+```text
+protocol/*.sproto（唯一权威源）
+  ├─ Skynet Server：解析或加载编译后的 Schema
+  ├─ Unity Client：生成 C# 类型和静态 Codec
+  └─ H5 Client：生成 TypeScript 类型和静态 Codec
+```
+
+各端必须共享协议 ID、Field Tag、字段类型和兼容规则，不要求共享同一种源码语言。已经发布的 Field Tag 不修改、不复用；删除字段后仍保留该 Tag；新增字段按可缺省字段处理。旧 Decoder 应能跳过自己不认识的新增字段。
 
 ### 9.2 `lualib/protocol/frame.lua`
 
@@ -1124,6 +1219,16 @@ return M
 ```
 
 `>s2` 表示 big-endian、2-byte Length Prefix。Server 输出 Response 时必须加这个 Header。Gate 收包时已经去掉 Header，Watchdog 的 `SOCKET.data(fd, msg)` 得到的是纯 Sproto Payload，所以不能再次去头。
+
+两字节无符号长度的上限是 `65535`。`M.pack` 在写 Socket 前拒绝更大的 Payload，避免长度截断。正式业务里的场景快照、邮件列表或批量同步接近这个上限时，应拆分消息并限制单次元素数量，不能只把断言删除。
+
+Sproto 还提供 `sproto.pack`/`sproto.unpack`，它们按 8 字节分组压缩大量零字节，实现在 `third_party/skynet/lualib-src/sproto/sproto.c` 的同名函数中。本课没有调用这两个函数，线上格式就是：
+
+```text
+[2-byte big-endian length][原始 Sproto payload]
+```
+
+如果以后启用 `sproto.pack`，Client 与 Server 必须同时修改并通过互通测试，不能根据 Packet 内容猜测是否压缩。`pack/unpack` 也不能替代 TCP Length Prefix；一个处理内容压缩，一个处理 Byte Stream 的消息边界。
 
 ### 9.3 `service/protocol/protoloader.lua`
 
@@ -1919,6 +2024,14 @@ Gate 可能已经把第二个完整 Packet 放入 Watchdog Mailbox。若第一�
 
 PlayerMgr 只负责登录期的生命周期和路由查询。登录完成后的高频 Packet 由 Gate 直接转发到 Agent，避免每个业务请求都经过中心 Manager。
 
+### 14.4 解码失败和业务参数校验是两层检查
+
+`SOCKET.data` 用 `pcall` 包住 `host:dispatch(msg)`。截断的 Sproto Payload、错误 Field Length 或无法识别的 RPC Envelope 会走解码失败分支，连接进入 `CLOSING`，而不是让一次恶意 Packet 终止 Watchdog Service。
+
+成功解码只证明字节符合 Sproto Wire Format，不证明参数可以进入业务。`player_id` 仍要用 `math.tointeger` 检查；生产登录还应限制 Token/String 长度、协议状态和单位时间请求数。数组元素上限、嵌套深度和各业务字段范围也应在对应入口校验，不能因为外层 Frame 已限制为 `65535` 字节就省略。
+
+当前失败路径延迟一个 Tick 调用 Gate `kick`，让已经写入的拒绝 Response 有机会进入发送路径。`socket.write` 成功也不代表 Client 必然收到数据，断线和重试语义要由后续登录/重连协议处理。
+
 提交 Watchdog：
 
 ```bash
@@ -2150,6 +2263,19 @@ socket.close(fd)
 os.exit(0, true)
 ```
 
+`host` 和 `attach` 的方向容易写反。Client 先用 S2C Schema 创建 `host`，因为它接收并解码 Server 发来的 Response 或 Push；再把 C2S Schema attach 到这个 Host，得到 Request Encoder：
+
+```text
+s2c schema
+  └─ host:dispatch(Server Packet)
+
+c2s schema
+  └─ host:attach(...)
+       └─ request("login", args, session)
+```
+
+Server 侧正好相反。`service/gateway/watchdog.lua` 用 C2S Schema 创建 Host，`host:dispatch(msg)` 解码 Client Request；返回的 `response` Closure 已经记住协议类型和 session，调用 `response { ... }` 才得到对应的 Sproto Response Payload。`frame.write` 随后只增加 TCP Length Prefix，不再改动 RPC Envelope。
+
 `receive_frame` 必须允许一次 `recv` 只拿到 Header 的一部分、Payload 的一部分，或者同时拿到多个 Frame。第一课只接收一个 Response，但 Buffer 写法保留了正确的 Stream 语义。
 
 `os.exit(0, true)` 用于这个一次性 Test Client。官方 `client.socket` 加载后会建立 stdin pthread；如果只让 Lua Chunk Return，非交互运行环境可能仍等待 stdin Thread。正式交互 Client 会使用它提供的 `readstdin()` Queue，不能同时用 `io.read()` 竞争 stdin。
@@ -2235,6 +2361,111 @@ ss -ltnp | grep ':8888'
 ```
 
 如果 Server 报 `Address already in use`，不要重复启动；找到旧的 `SERVER` 集成终端并用 `Ctrl+C` 停止。
+
+### 16.4 64 位整数经过各端时怎样保持精确
+
+当前 Server 使用 Skynet Bundled Modified Lua 5.4.7。`third_party/skynet/3rd/lua/luaconf.h` 将默认 `LUA_INTEGER` 配置为 `long long`，在本课 Linux/WSL2 构建中是有符号 64 位；Sproto `integer` 也允许编码 signed 64-bit。`player_id=10001` 没有触及边界，正式项目的 Player ID、Guild ID 和订单流水需要逐段检查：
+
+```text
+Database BIGINT
+  → Lua 5.4 integer
+  → Sproto signed 64-bit integer
+  → Unity long 或 H5 BigInt/String
+  → UI、日志、JSON、LocalStorage
+```
+
+Unity C# 使用 `long` 可以保持 Sproto signed 64-bit 值。不要生成超过 `long.MaxValue` 的 `ulong` ID 后再交给 Lua；本工程的 Sproto Schema 没有单独的 `uint64` 类型。
+
+JavaScript `Number` 只能精确表示 `-(2^53-1)` 到 `2^53-1` 范围内的整数。H5 Decoder 应把大整数保存为 `BigInt`，或者从协议边界开始就把标识类字段定义为十进制字符串。下面的转换会静默丢失低位：
+
+```javascript
+const playerId = Number("9223372036854775806");
+```
+
+`BigInt` 不能直接交给普通 `JSON.stringify`，进入 JSON、浏览器存储或日志 SDK 前要明确转换规则。订单号等只比较和传递、不参与算术的外部标识，直接使用字符串通常更稳妥。
+
+本课保留 `player_id : integer`，便于观察 Sproto 整数的真实编码。后续制作 Unity/H5 Client 时应增加至少四组互通值：`2^31-1`、`2^31`、`2^53-1` 和 `math.maxinteger`，由 Lua 编码后让 Client 解码，再由 Client 编码回 Lua。只验证 `10001` 不能证明 64 位链路正确。
+
+### 16.5 Lua Test Client 与正式游戏 Client 的边界
+
+`client/login_client.lua` 是协议参考实现和 E2E Driver，不承担正式客户端框架的职责。不同前端接入同一 Server 时，Transport 会有差异：
+
+| Client | Transport | 消息边界 | Sproto Codec |
+|---|---|---|---|
+| 本课 Lua Test Client | TCP | 2-byte big-endian Length | Skynet 自带 Lua/C 实现 |
+| Unity Windows/Android/iOS | TCP | 2-byte big-endian Length | C# 静态 Codec |
+| H5 | WSS WebSocket | 一个 Binary Message | TypeScript Codec |
+| Unity WebGL | WSS WebSocket | 一个 Binary Message | WebGL 可用的 C#/JS Codec |
+
+浏览器不能直接连接本课的 Raw TCP Gate。H5 和 Unity WebGL 需要 WebSocket Gateway；Skynet 已提供 `third_party/skynet/lualib/http/websocket.lua`，示例在 `third_party/skynet/examples/simplewebsocket.lua`。WebSocket 自身保留消息边界，通常让一个 Binary Message 直接携带一个 Sproto Payload，不再重复增加两字节 TCP Header。Gateway 收到 Binary Message 后，把 Payload 交给与 TCP 入口相同的 Sproto 分发层。
+
+前端没有必须引用的第三方 Sproto Runtime。项目可以维护小型 `SprotoReader`、`SprotoWriter`、RPC Envelope 和 Session Manager，再根据权威 `.sproto` 文件生成每条消息的 C#/TypeScript 静态 Codec。业务协议不应逐条手写；Schema 增加字段后，手写 Codec 很容易漏掉编码、解码或未知字段兼容分支。
+
+自有 Codec 要以 Skynet 自带的 Lua/C Sproto 为参考实现，CI 至少执行：
+
+```text
+Lua encode → C# decode
+C# encode  → Lua decode
+Lua encode → TypeScript decode
+TypeScript encode → Lua decode
+```
+
+样本覆盖缺省字段、未知字段、空 String/Binary、嵌套结构、空数组、32/64 位整数、负数、截断数据和伪造长度。第三方实现可以用于阅读和交叉验证，不必成为产品的 Runtime 依赖。
+
+本阶段不实现 Unity/H5 Client。第一课的验收仍以 Lua Test Client 打通真实 TCP Login 为准；这里先固定跨语言边界，防止当前协议只能被 Lua Client 正确解释。
+
+### 16.6 从字节观察一次 Login
+
+这一步临时打印 Client 编码结果，确认代码中的三层数据与网络字节能对应起来。在 `client/login_client.lua` 的 `local session = 1` 前加入：
+
+```lua
+-- 仓库路径：client/login_client.lua
+-- 把 Binary String 中的每个 Byte 转为两位十六进制，只用于本节观察协议。
+local function to_hex(data)
+    return (data:gsub(".", function(byte)
+        return string.format("%02X ", string.byte(byte))
+    end))
+end
+```
+
+把原来的直接发送改成先保存 Payload，再构造完整 Frame：
+
+```lua
+-- 仓库路径：client/login_client.lua
+local session = 1
+local payload = request("login", {
+    player_id = options.player,
+    token = options.token,
+}, session)
+
+local packet = string.pack(">s2", payload)
+print("SPROTO_PAYLOAD " .. to_hex(payload))
+print("TCP_PACKET     " .. to_hex(packet))
+socket.send(fd, packet)
+```
+
+运行一次：
+
+```bash
+./scripts/linux/run_client.sh --player=10001
+```
+
+检查 `TCP_PACKET` 的前两个 Byte。把它们按大端序合并后，数值应等于 `SPROTO_PAYLOAD` 的 Byte 数：
+
+```text
+payload_size = first_byte * 256 + second_byte
+```
+
+`TCP_PACKET` 从第三个 Byte 开始应与 `SPROTO_PAYLOAD` 完全相同。`third_party/skynet/lualib/snax/gateserver.lua` 调用 `netpack.filter`，实际拆包发生在 `third_party/skynet/lualib-src/lua-netpack.c::filter_data_`。`third_party/skynet/service/gate.lua::handler.message` 得到完整 Payload 后再交给 Watchdog，所以 `service/gateway/watchdog.lua::SOCKET.data(fd, msg)` 收到的内容从第三个 Byte 开始。随后 `host:dispatch(msg)` 从 Sproto `.package` 取出 `type` 和 `session`，再解码 `login.request`。
+
+这个观察代码不进入正式 Client。实验完成后执行：
+
+```bash
+git diff -- client/login_client.lua
+git restore client/login_client.lua
+```
+
+`git restore` 丢弃指定文件尚未 Stage 的修改，可类比 SVN 的 Revert。执行前必须先看 `git diff`，确认文件中只有本节临时打印，避免连同需要保留的代码一起撤销。
 
 停止 Server 后提交：
 
@@ -3640,6 +3871,10 @@ git branch -d feature/login
 
 在另一个临时目录 Clone `SkynetMMOServerTest`，按 README/脚本恢复 Skynet，运行 Login E2E。该练习验证远程仓库是否保存了足够的重建信息。
 
+### 练习八：设计 Unity 与 H5 的 Login 接入
+
+不修改 Server 业务 Service，分别画出 Unity 原生客户端和 H5 客户端发出 `login`、收到 Response 的字节路径。标明 Transport、消息边界、Sproto Codec、RPC session 和 64 位 `player_id` 在客户端使用的类型。说明哪些代码可以共用，哪些只能留在 TCP 或 WebSocket Adapter。
+
 ## 27. 参考答案
 
 ### 答案一
@@ -3706,6 +3941,35 @@ git describe --tags --always
 
 成功条件是新目录没有借用原工程的 `third_party`，仍然输出 `ALL_TESTS_OK`，并且 `git describe` 能看到 `lesson-1-login`。
 
+### 答案八
+
+```text
+Unity Windows/Android/iOS
+  LoginRequest(C#，player_id 使用 long)
+  -> C# Sproto Codec 编码业务结构
+  -> RPC Envelope 写入 type/session
+  -> TCP Adapter 加 2-byte big-endian Length
+  -> Skynet Gate 拆 Frame
+  -> Watchdog host:dispatch
+  -> Auth/PlayerMgr/PlayerAgent
+  -> response Closure 编码 Sproto Payload
+  -> TCP Frame
+  -> Unity TCP Adapter 拆 Frame
+  -> 按 session 完成 Pending Request
+
+H5 / Unity WebGL
+  LoginRequest(TypeScript，player_id 使用 BigInt 或 String)
+  -> TypeScript Sproto Codec 编码业务结构
+  -> RPC Envelope 写入 type/session
+  -> WebSocket Binary Message，不增加 TCP 的 2-byte Header
+  -> Skynet WebSocket Gateway 取得完整 Payload
+  -> 与 TCP 入口共用 Sproto dispatch 和后续业务链
+  -> WebSocket Binary Response
+  -> 按 session 完成 Promise
+```
+
+两端共用权威 `.sproto` 定义、协议 ID、Field Tag、生成规则、RPC session 语义和互通样本。TCP 的粘包缓冲与两字节 Header 只属于 Unity Native TCP Adapter；WebSocket Handshake、Ping/Pong 和 Binary Message 只属于 H5/WebGL Adapter。Watchdog 后面的 Auth、PlayerMgr 和 PlayerAgent 不因前端类型分叉。
+
 ## 28. 课程结束检查表
 
 ```text
@@ -3722,6 +3986,9 @@ git describe --tags --always
 [ ] LuaPanda 能命中 Watchdog 和动态 PlayerAgent
 [ ] GDB 能命中 Runtime 与 snlua 创建函数
 [ ] 能解释每次 call 的 yield 与恢复检查
+[ ] 能区分 TCP Frame 大端长度与 Sproto 内部小端字段
+[ ] 能说明当前链路未使用 sproto.pack/unpack
+[ ] 能说明 Unity 与 H5 的 Transport、64 位整数和 Codec 边界
 [ ] 能在新的 Clone 中仅靠脚本恢复并通过测试
 ```
 
