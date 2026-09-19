@@ -48,17 +48,21 @@ G:\WSL\Ubuntu
 - GDB 能停在 `main`、`skynet_start`、`skynet_context_new` 和 `snlua_create`；
 - 能顺着一条 Login Request 说明调用方、接收方、yield、恢复位置和状态所有者。
 
-命令会明确标注执行环境：
+本文固定使用下面三个终端名称。窗口标题和颜色可能不同，判断依据是命令提示符和 `pwd`，不要只凭窗口外观判断：
 
-```text
-管理员 PowerShell：WSL 安装、Distribution 删除、G 盘安装位置。
-普通 PowerShell：只读检查和启动 Ubuntu。
-Ubuntu/WSL Terminal：Git、构建、服务器、Client、Test 和 GDB。
-```
+| 本文名称 | 从哪里打开 | 典型提示符 | 用途 |
+|---|---|---|---|
+| **终端 A：Windows PowerShell** | Windows Terminal 新建 PowerShell Tab | `PS C:\Users\Administrator>` | 安装和管理 WSL、检查 G 盘；需要时以管理员身份打开 |
+| **终端 B：Windows Terminal 的 Ubuntu Shell** | Windows Terminal 新建 Ubuntu Tab；也可以在终端 A 执行 `wsl -d Ubuntu` 后进入 | `simbi@主机名:~$` | Ubuntu 首次初始化、创建工程，并执行一次 `code .` |
+| **终端 C：VS Code 的 WSL 集成终端** | 已显示 `WSL: Ubuntu` 的 VS Code 窗口中，选择“终端 → 新建终端” | `simbi@主机名:~/workspace/skynet-mmo-arpg$` | 后续 Git、编译、Server、Client、Test、GDB 和扩展安装 |
+
+终端 B 和终端 C 都在同一个 Ubuntu Distribution 中执行 Bash，看到的是同一套 Linux 文件。区别只是承载它们的界面：终端 B 属于 Windows Terminal，终端 C 位于 VS Code 底部。为了让操作现场可复现，本文在打开工程前使用终端 B，`code .` 打开 WSL Workspace 后统一使用终端 C。
+
+VS Code 也可能在底部打开本地 PowerShell。如果提示符以 `PS` 开头，或者 `pwd` 返回 `C:\...`，它不是终端 C，不要在那里执行本文的 Linux 命令。
 
 ## 2. 清点并删除旧 Ubuntu
 
-先在普通 PowerShell 检查当前现场：
+在**终端 A：Windows PowerShell**检查当前现场：
 
 ```powershell
 wsl --version
@@ -71,7 +75,7 @@ Get-PSDrive -PSProvider FileSystem
 
 G 盘建议至少保留数十 GB。`ext4.vhdx` 会随着 APT Package、源码、编译产物、Core Dump 和数据库增长，不能按刚安装后的文件大小估算长期空间。
 
-确认旧参考仓库已经 Push。进入当前仍可使用的旧 Ubuntu 或旧 VS Code Terminal：
+确认旧参考仓库已经 Push。下面命令在仍可使用的**终端 B：Ubuntu Shell**，或者已经连接旧 Ubuntu 的**终端 C：VS Code WSL 集成终端**中执行：
 
 ```bash
 cd /mnt/g/simbi/dev/skynet-mmo-learning
@@ -94,7 +98,7 @@ wsl -d Ubuntu -- bash -lc "du -sh ~; find ~ -maxdepth 2 -type f | head -n 100"
 
 确认 `/home` 中没有唯一副本的 SSH Key、未 Push 仓库、数据库或其他需要保留的数据。下面的 `--unregister` 会永久删除该 Distribution 的整个 Linux 文件系统。
 
-关闭所有 Ubuntu Terminal 和显示 `WSL: Ubuntu` 的 VS Code 窗口。以管理员身份打开 PowerShell：
+关闭所有 Ubuntu Shell 和显示 `WSL: Ubuntu` 的 VS Code 窗口。以管理员身份打开**终端 A：Windows PowerShell**：
 
 ```powershell
 wsl --shutdown
@@ -106,7 +110,7 @@ wsl --list --verbose
 
 ## 3. 准备 WSL2，把 Ubuntu 安装到 G 盘
 
-仍在管理员 PowerShell 中执行：
+仍在管理员权限的**终端 A：Windows PowerShell**中执行：
 
 ```powershell
 wsl --update
@@ -172,11 +176,19 @@ Ubuntu 的 `VERSION` 应为 `2`，VHDX 应位于 G 盘。如果 `--location` 不
 
 ## 4. 初始化 Ubuntu，安装工具链
 
-普通 PowerShell 启动 Ubuntu：
+在普通权限的**终端 A：Windows PowerShell**中启动 Ubuntu：
 
 ```powershell
 wsl -d Ubuntu
 ```
+
+执行后不会另开窗口；当前 Tab 会从 PowerShell 切换成 Ubuntu Bash。看到类似下面的提示符后，这个 Tab 就是本文所说的**终端 B：Windows Terminal 的 Ubuntu Shell**：
+
+```text
+simbi@MS-WRTLBOKDIUFS:~$
+```
+
+如果提示符仍是 `PS C:\...>`，说明还在 PowerShell。后面的 `whoami`、`apt`、`mkdir` 等 Linux 命令都不要在 PowerShell 提示符下执行。
 
 第一次启动会要求：
 
@@ -188,7 +200,7 @@ Retype new password:
 
 用户名建议使用小写英文。Linux 输入密码时没有字符或星号回显，输入完成后直接按 Enter。
 
-进入 Shell 后检查：
+在刚刚进入的**终端 B**中检查：
 
 ```bash
 whoami
@@ -251,7 +263,15 @@ file --version | head -n 1
 ms-vscode-remote.remote-wsl
 ```
 
-回到 Ubuntu，先建立空工程：
+这里操作的是 Windows VS Code 的扩展界面，不在任何命令行中输入扩展 ID。
+
+回到**终端 B：Windows Terminal 的 Ubuntu Shell**。你现在看到的提示符应以 `$` 结尾，例如：
+
+```text
+simbi@MS-WRTLBOKDIUFS:/mnt/c/Users/Administrator$
+```
+
+`/mnt/c/Users/Administrator` 说明当前 Ubuntu Shell 是从 Windows 用户目录进入的，Shell 本身没有问题，但工程不能建在这里。在**终端 B**逐条执行：
 
 ```bash
 mkdir -p ~/workspace/skynet-mmo-arpg
@@ -259,18 +279,33 @@ cd ~/workspace/skynet-mmo-arpg
 git init -b main
 pwd
 ls -la
+```
+
+`pwd` 必须输出：
+
+```text
+/home/simbi/workspace/skynet-mmo-arpg
+```
+
+用户名不是 `simbi` 时，路径中的用户名以实际输出为准。确认路径后，仍在**终端 B**执行：
+
+```bash
 code .
 ```
 
 `git init -b main` 在当前空目录创建本地 Git Repository，并把初始 Branch 命名为 `main`。它只创建 `.git` 元数据，不访问 GitHub。对比 SVN，`svn checkout` 通常同时取得远程内容并建立 Working Copy；`git init` 只是把当前目录变成本地 Repository，远程关系稍后单独配置。
 
-此时工程中只应有 `.git`。第一次执行 `code .` 会在 Ubuntu 中安装 VS Code Server。新窗口左下角必须显示：
+此时工程中只应有 `.git`。第一次执行 `code .` 会在 Ubuntu 中安装 VS Code Server，并打开一个新的 Windows VS Code 窗口。后续操作切换到这个新窗口，终端 B 可以保留，但暂时不再使用。
+
+新 VS Code 窗口左下角必须显示：
 
 ```text
 WSL: Ubuntu
 ```
 
-在新窗口按 ``Ctrl+` `` 打开 Terminal：
+在这个显示 `WSL: Ubuntu` 的 VS Code 窗口中，选择顶部菜单“终端 → 新建终端”，或者按 ``Ctrl+` ``。底部出现的命令行就是**终端 C：VS Code 的 WSL 集成终端**。
+
+先在**终端 C**执行：
 
 ```bash
 pwd
@@ -278,9 +313,9 @@ df -T .
 uname -a
 ```
 
-`pwd` 必须是 `/home/<用户>/workspace/skynet-mmo-arpg`，不能是 `/mnt/g/...`。源码逻辑上位于 Linux Home，实际存储在 `G:\WSL\Ubuntu\ext4.vhdx` 中。
+`pwd` 必须是 `/home/<用户>/workspace/skynet-mmo-arpg`，不能是 `/mnt/c/...` 或 `/mnt/g/...`；`uname -a` 必须输出 Linux 信息。满足这两个条件，才能确认终端 C 的 Shell 和工作目录都正确。源码逻辑上位于 Linux Home，实际存储在 `G:\WSL\Ubuntu\ext4.vhdx` 中。
 
-在这个 WSL 窗口安装远程扩展：
+现在就在**终端 C，也就是 VS Code 底部这个终端**中执行扩展安装命令：
 
 ```bash
 code --install-extension ms-vscode.cpptools
@@ -289,11 +324,21 @@ code --install-extension stuartwang.luapanda@3.3.1 --force
 code --list-extensions --show-versions
 ```
 
-三者分别负责 C/GDB、Lua Language Server 和 Lua Runtime Debug。扩展必须显示为安装在 WSL 侧；Windows 本地安装状态不能替代远程扩展。
+不要在终端 A 的 PowerShell 中执行这四条命令，也不需要回到终端 B。此处从终端 C 调用的 `code` CLI 会把扩展安装到当前 WSL Remote 环境。
+
+三者分别负责 C/GDB、Lua Language Server 和 Lua Runtime Debug。最后一条命令应包含类似输出：
+
+```text
+ms-vscode.cpptools@...
+sumneko.lua@...
+stuartwang.luapanda@3.3.1
+```
+
+再按 `Ctrl+Shift+X` 打开 VS Code Extensions 面板，相关扩展应位于 `WSL: Ubuntu - 已安装` 分组。Windows 本地安装状态不能替代 WSL 侧安装。
 
 ### 5.1 配置这个项目使用的 Git 身份和换行策略
 
-以下配置在 Ubuntu 中执行。姓名和邮箱替换成你准备写入 Commit 的真实信息：
+以下配置继续在**终端 C：VS Code 的 WSL 集成终端**中执行。姓名和邮箱替换成你准备写入 Commit 的真实信息：
 
 ```bash
 cd ~/workspace/skynet-mmo-arpg
@@ -319,7 +364,7 @@ git log --oneline
 
 ## 6. 创建工程骨架
 
-后文所有路径都从 `~/workspace/skynet-mmo-arpg` 开始。先在 WSL Terminal 创建目录：
+后文没有特别注明时，所有 Linux 命令都在**终端 C：VS Code 的 WSL 集成终端**执行，路径从 `~/workspace/skynet-mmo-arpg` 开始。先创建目录：
 
 ```bash
 cd ~/workspace/skynet-mmo-arpg
@@ -502,33 +547,72 @@ git log --oneline --decorate --graph --all -n 20
 
 ## 7. 写 Skynet 获取与构建脚本
 
+本教程中的脚本注释按“文件内第一次出现”处理：一个 Bash Option、特殊变量、重定向或命令在当前脚本中第一次使用时详细解释；同一脚本后面重复使用时不再解释。不同脚本都是可以独立执行的入口，因此各自保留 Shebang、严格模式和工作目录切换说明，单独打开任何一个文件都能判断它的运行条件。
+
 ### 7.1 `scripts/bootstrap_skynet.sh`
 
 ```bash
 #!/usr/bin/env bash
+
+# 上面的 Shebang 必须位于文件第一行。
+# 直接执行 ./scripts/bootstrap_skynet.sh 时，Linux 会通过 /usr/bin/env
+# 从当前 PATH 中找到 bash，并用它解释这个文件。
+
+# 打开 Bash 严格模式：
+# -e：普通命令返回非 0 时停止脚本；
+# -u：读取未定义变量时报错；
+# -o pipefail：管道中任意一个命令失败，整条管道都算失败。
 set -euo pipefail
+
+# $0 是当前脚本的启动路径。
+# dirname "$0" 取得脚本所在目录。
+# $(...) 先执行括号内的命令，再把输出替换到当前位置。
+# 本脚本位于 scripts/，所以再进入上一级目录就是仓库根目录。
+# 使用双引号，避免路径中包含空格时被 Bash 拆成多个参数。
 cd "$(dirname "$0")/.."
 
+# 第三方依赖必须固定版本。升级 Skynet 时应显式修改这里并完成回归测试，
+# 不能在每次运行脚本时跟随上游 Branch。
+# Bash 变量赋值时等号两侧不能有空格；读取变量时使用 "$变量名"。
 VERSION="v1.8.0"
 DEST="third_party/skynet"
 
+# Makefile 存在时把目录视为已经下载，但仍检查它是否恰好位于目标 Tag。
+# [[ ... ]] 是 Bash 条件表达式，-f 判断路径是否为普通文件。
 if [[ -f "$DEST/Makefile" ]]; then
+    # git -C "$DEST" 表示在目标目录中执行 Git，不改变当前 Shell 目录。
+    # 2>/dev/null 把 Standard Error 丢弃；|| 表示左侧失败才执行右侧。
+    # describe 失败时执行 true，把这一条复合命令变成成功，让脚本自行诊断版本。
     actual="$(git -C "$DEST" describe --tags --exact-match 2>/dev/null || true)"
+
+    # != 做字符串不等比较。变量全部加双引号，避免空值或空格破坏参数边界。
     if [[ "$actual" != "$VERSION" ]]; then
+        # ${actual:-unknown} 表示 actual 未定义或为空时使用 unknown。
+        # >&2 把消息写到 Standard Error；exit 1 用非 0 状态结束脚本。
         echo "Skynet 目录存在，但版本不是 $VERSION：${actual:-unknown}" >&2
         exit 1
     fi
+
+    # 版本正确说明 Bootstrap 已完成。exit 0 明确以成功状态结束，不再 Clone。
     echo "Skynet $VERSION already exists at $DEST"
     exit 0
 fi
 
+# 目标路径存在却没有 Makefile，可能是中断下载或人工放入的其他文件。
+# 脚本拒绝自动覆盖或删除，保留现场给开发者检查。
+# -e 判断任意类型的路径是否存在，包括目录、普通文件和 Symbolic Link。
 if [[ -e "$DEST" ]]; then
     echo "$DEST 已存在但不是完整 Skynet 源码；请检查后处理，脚本不会覆盖" >&2
     exit 1
 fi
 
+# 只取得 v1.8.0 当前 Commit 的浅历史，并初始化 Skynet 记录的 Submodule。
+# 行尾反斜杠表示当前命令尚未结束，下一物理行仍属于同一条 git clone。
 git clone --recursive --branch "$VERSION" --depth 1 \
     https://github.com/cloudwu/skynet.git "$DEST"
+
+# 再做一次显式恢复，使脚本的依赖条件清楚；若 Clone 期间某个 Submodule
+# 没有完成，这里会失败并阻止后续构建。
 git -C "$DEST" submodule update --init --recursive
 
 echo "SKYNET_BOOTSTRAP_OK version=$VERSION"
@@ -564,14 +648,33 @@ git -C third_party/skynet submodule status
 
 ```bash
 #!/usr/bin/env bash
+
+# 上面的 Shebang 让 Linux 从 PATH 中查找 bash 来解释本文件；它必须是第一行。
+
+# 打开 Bash 严格模式：
+# -e：普通命令返回非 0 时停止脚本，编译失败后不会继续打印 BUILD_OK；
+# -u：读取未定义变量时报错；
+# -o pipefail：管道中任意一个命令失败，整条管道都算失败。
 set -euo pipefail
+
+# $0 是当前脚本的启动路径，dirname "$0" 取得 scripts/linux。
+# $(...) 是 Command Substitution，把 dirname 的输出放回 cd 命令。
+# 本脚本位于 scripts/linux/，所以 /../.. 向上两级回到仓库根目录。
+# 整个路径放在双引号中，防止目录名中的空格触发参数拆分。
 cd "$(dirname "$0")/../.."
 
+# 新 Clone 中没有 third_party/skynet；先调用 Bootstrap 恢复固定版本源码。
+# [[ ... ]] 是 Bash 条件表达式，! 表示取反，-f 判断普通文件是否存在。
+# 已有 Makefile 时条件为 False，跳过下载，使日常增量编译保持快速。
 if [[ ! -f third_party/skynet/Makefile ]]; then
     ./scripts/bootstrap_skynet.sh
 fi
 
+# 使用 Skynet 官方 Makefile 的 linux Target，编译 Runtime、Bundled Lua、
+# C Service 和 Lua C Module。-C 只切换 Make 的工作目录，不改变当前 Shell。
 make -C third_party/skynet linux
+
+# 只有前面的 Make 成功时才会执行到这里，供人工和 CI 判断构建完成。
 echo "BUILD_OK"
 ```
 
@@ -604,31 +707,88 @@ ldd third_party/skynet/skynet
 
 ## 8. 写第一个最小 Skynet Service
 
-先只打通 `ELF -> config -> official bootstrap -> service/main.lua`，还不启动网络。
+这一节只打通一条启动链：Shell 启动 Skynet ELF，ELF 读取配置，C Runtime 创建官方 Bootstrap Service，Bootstrap 再创建我们编写的 Main Service。暂时没有监听端口，也没有 Login 业务。验收依据是 Main Service 的日志确实经过 Skynet Logger 输出，并且你能解释该日志产生前后发生了什么。
 
-### 8.1 `config/game.lua`
+### 8.1 检查当前操作现场
+
+下面命令在**终端 C：VS Code 的 WSL 集成终端**执行。先确认终端、目录、Branch 和构建产物：
+
+```bash
+cd ~/workspace/skynet-mmo-arpg
+pwd
+uname -a
+git branch --show-current
+test -x third_party/skynet/skynet && echo "SKYNET_BINARY_OK"
+test -f third_party/skynet/cservice/snlua.so && echo "SNLUA_OK"
+test -f third_party/skynet/luaclib/skynet.so && echo "LUA_API_OK"
+```
+
+此时应满足：
+
+```text
+pwd                         /home/simbi/workspace/skynet-mmo-arpg
+uname -a                    输出 Linux/WSL2 信息
+git branch --show-current   main
+三个产物检查                全部输出 *_OK
+```
+
+只要有一项不符合，就先回到前面的环境或构建步骤。特别是 `pwd`：本节所有配置都使用相对路径，Server Process 的 Current Working Directory 错了，后面的 `./service/?.lua` 和 `./third_party/skynet/...` 会一起失效。
+
+在 VS Code 左侧按 `Ctrl+Shift+E` 打开 Explorer。最上方根目录应是 `skynet-mmo-arpg`，其中已经存在 `config`、`service` 和 `scripts/linux`。接下来通过 Explorer 创建文件；每个文件都要确认保存为 UTF-8、LF。
+
+### 8.2 写 Runtime 配置 `config/game.lua`
+
+在 Explorer 中右键 `config` 目录，选择“新建文件”，输入：
+
+```text
+game.lua
+```
+
+完整仓库路径：`config/game.lua`
+
+填入下面内容并按 `Ctrl+S` 保存：
 
 ```lua
--- Development configuration. Start from project root.
+-- 所有相对路径都以 Skynet Process 的 Current Working Directory 为起点。
+-- scripts/linux/run_server.sh 会先切回仓库根目录，再启动 ELF。
 root = "./"
 skynet_root = root .. "third_party/skynet/"
 
-luaservice = root .. "service/?.lua;" .. skynet_root .. "service/?.lua"
+-- snlua Loader 用 luaservice 查找一个 Service 的 Lua 入口文件。
+-- 项目目录放前面，因此 "main" 会先命中 ./service/main.lua；
+-- 项目没有的 "bootstrap" 会继续命中官方 service/bootstrap.lua。
+luaservice = root .. "service/?.lua;"
+    .. skynet_root .. "service/?.lua"
+
+-- 每个 snlua Service 创建自己的 Lua State 后，都由这个官方 Loader
+-- 根据 Service Name 搜索并执行对应的入口文件。
 lualoader = skynet_root .. "lualib/loader.lua"
+
+-- 普通 Lua Module 的搜索路径，例如 require "skynet"。
 lua_path = root .. "lualib/?.lua;"
     .. root .. "lualib/?/init.lua;"
     .. skynet_root .. "lualib/?.lua;"
     .. skynet_root .. "lualib/?/init.lua"
+
+-- Lua require 加载的 Native Module，例如 require "skynet.core"。
 lua_cpath = skynet_root .. "luaclib/?.so"
+
+-- Skynet C Service Module 的搜索路径。snlua 属于这一类。
 cpath = skynet_root .. "cservice/?.so"
 
+-- 创建 8 个业务 Worker Thread。Monitor、Timer、Socket Thread 不计入此数。
 thread = 8
-harbor = 0
-bootstrap = "snlua bootstrap"
-start = "main"
-logger = nil
-logpath = "."
 
+-- 本课使用单节点模式，不启用旧 Harbor 多节点组件。
+harbor = 0
+
+-- C Runtime 的第一个 Service：加载 snlua.so，并把 "bootstrap" 作为参数。
+bootstrap = "snlua bootstrap"
+
+-- 官方 bootstrap.lua 读取 start，再创建项目的 Main Service。
+start = "main"
+
+-- 后续章节使用的业务配置。当前最小 Main 尚未读取这些字段。
 gate_host = "127.0.0.1"
 gate_port = 8888
 max_client = 1024
@@ -636,11 +796,40 @@ debug_console_port = 8000
 storage_pool = 2
 ```
 
-四类路径不要混用：`cpath` 找 C Service，`luaservice` 找 Service 主文件，`lua_path` 找普通 Lua Module，`lua_cpath` 找 Lua C Module。
+这个文件虽然使用 Lua 语法，但它不在任何业务 Service 的 Lua State 中执行。`third_party/skynet/skynet-src/skynet_main.c::main` 创建一个临时配置 Lua State，执行内嵌的 `load_config`，再用它读取 `config/game.lua`。`_init_env` 遍历配置 Table，把值转成 Skynet Environment String，随后 `lua_close` 立即销毁配置 State。以后业务代码调用 `skynet.getenv("gate_port")` 得到的是字符串 `"8888"`，不是这里原来的 Lua Number。
 
-`bootstrap = "snlua bootstrap"` 中，前一个词让 C Runtime 加载 `cservice/snlua.so`，后一个词交给 snlua Loader，最终找到官方 `third_party/skynet/service/bootstrap.lua`。官方 Bootstrap 再读取 `start = "main"`，创建自己的 `service/main.lua`。
+四种搜索路径解决不同的加载问题：
 
-### 8.2 `service/main.lua` 第一版
+| 配置项 | 谁使用 | 当前会加载的例子 |
+|---|---|---|
+| `cpath` | Skynet C Module Loader | `cservice/snlua.so` |
+| `luaservice` | `lualib/loader.lua` | 官方 `service/bootstrap.lua`、项目 `service/main.lua` |
+| `lua_path` | Lua `require` | `lualib/skynet.lua` |
+| `lua_cpath` | Lua `require` | `luaclib/skynet.so`，模块名是 `skynet.core` |
+
+`?` 是待替换的 Module 或 Service Name，分号分隔多个候选 Pattern。搜索顺序有实际影响：项目 `service/?.lua` 放在官方路径前面，所以不要在项目中随意创建 `service/bootstrap.lua`，否则它会遮蔽官方 Bootstrap。
+
+保存后在**终端 C**检查文件确实位于预期路径：
+
+```bash
+realpath config/game.lua
+file config/game.lua
+sed -n '1,80p' config/game.lua
+```
+
+`realpath` 应位于 `/home/simbi/workspace/skynet-mmo-arpg/config/game.lua`，`file` 不应报告 `with CRLF line terminators`。
+
+### 8.3 写 Main Service `service/main.lua`
+
+在 Explorer 中右键 `service` 目录，选择“新建文件”，输入：
+
+```text
+main.lua
+```
+
+完整仓库路径：`service/main.lua`
+
+填入并保存：
 
 ```lua
 local skynet = require "skynet"
@@ -651,41 +840,197 @@ skynet.start(function()
 end)
 ```
 
-### 8.3 `scripts/linux/run_server.sh`
+执行到这个文件时，Runtime 已经为 Main 创建了独立的 snlua Service、Service Handle、Mailbox 和 Lua State。代码按下面的顺序发生：
 
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-cd "$(dirname "$0")/../.."
+1. `local skynet = require "skynet"` 在 Main 的 Lua State 中加载 `third_party/skynet/lualib/skynet.lua`。该 Module 随后加载 `skynet.core`，通过 `lua_cpath` 命中 `third_party/skynet/luaclib/skynet.so`，Lua 代码由此接入 C Runtime。
+2. `skynet.start(function() ... end)` 注册这个 Service 的消息回调，并安排一个 0 Tick Timer。当前 Lua 文件加载完成后，Runtime 才在 Main 的初始化 coroutine 中调用传入的函数。这里不能把 `skynet.start` 理解成新建 OS Thread。
+3. `skynet.error(...)` 把日志消息发给 Skynet Logger Service。它没有直接调用 Lua `print`；日志前面的 Service Address 由 Logger 路径附加。
+4. `skynet.exit()` 注销当前 Main Service，清理它等待或持有的 coroutine，并通知 `.launcher` 删除该 Service 的生命周期记录。
 
-CONFIG="${1:-config/game.lua}"
-exec ./third_party/skynet/skynet "$CONFIG"
-```
+第四步只退出 Main Service，不会自动关闭整个 Skynet Process。官方 `bootstrap.lua` 在创建 Main 之前已经创建 `.launcher`、`.cslave`、`DATACENTER` 和 `service_mgr` 等基础 Service；它们仍然存活，所以本节运行后进程会继续停留在前台。这一点和传统 C++ `main()` Return 后整个进程结束不同。
 
-执行：
+当前 Main 不持有业务状态，也没有 `skynet.call`，因此没有业务 yield 后状态失效的问题。它的初始化函数由一个 coroutine 执行；`skynet.exit()` 最终会让该 coroutine 以 `QUIT` 原因交回 Runtime。
 
-```bash
-chmod +x scripts/linux/run_server.sh
-./scripts/linux/run_server.sh
-```
+### 8.4 写统一启动脚本 `scripts/linux/run_server.sh`
 
-应该看到 `[Main] minimal bootstrap reached`，随后进程退出。此时退出是正确结果：业务 Main 和官方 Bootstrap 都已经退出，没有其他长期存活的业务 Service。
-
-这一小步证明以下链路已经工作：
+在 Explorer 中右键 `scripts/linux`，新建：
 
 ```text
 run_server.sh
-  -> third_party/skynet/skynet
-  -> skynet_main.c::main
-  -> config/game.lua
-  -> skynet_start
-  -> snlua bootstrap
-  -> official loader.lua
-  -> official bootstrap.lua
-  -> service/main.lua
 ```
 
-先提交这个可运行基线：
+完整仓库路径：`scripts/linux/run_server.sh`
+
+填入并保存：
+
+```bash
+#!/usr/bin/env bash
+
+# 上面的 Shebang 必须位于第一行；直接执行脚本时，Linux 会从 PATH 中
+# 找到 bash，并用它解释本文件。
+
+# 打开 Bash 严格模式：
+# -e：普通命令返回非 0 时停止脚本；
+# -u：读取未定义变量时报错；
+# -o pipefail：管道中任意一个命令失败，整条管道都算失败。
+set -euo pipefail
+
+# $0 是当前脚本的启动路径，dirname "$0" 取得 scripts/linux。
+# $(...) 会先执行 dirname，再把输出替换进 cd 的参数。
+# 本脚本位于 scripts/linux/，/../.. 向上两级就是仓库根目录。
+# 双引号保护整个路径，避免路径中的空格被 Bash 拆成多个参数。
+cd "$(dirname "$0")/../.."
+
+# $1 是第一个位置参数。
+# ${1:-config/game.lua} 表示 $1 未提供或为空时使用右侧默认值。
+# 未传参数时使用开发配置；以后也可以显式传入 config/test.lua。
+CONFIG="${1:-config/game.lua}"
+
+# exec 用 Skynet Process 替换当前 Shell Script Process，不额外保留一层 Bash；
+# Process PID 不变，退出码和 Ctrl+C 等 Signal 可以直接传递。
+# "$CONFIG" 保证配置路径即使含有空格也作为一个完整参数传给 Skynet。
+exec ./third_party/skynet/skynet "$CONFIG"
+```
+
+这里的 `cd` 解决了前面配置中相对路径的起点问题。`dirname "$0"` 得到脚本所在的 `scripts/linux`，再经过 `../..` 回到仓库根目录。如果没有这一步，从 `~/workspace` 调用脚本时，`root = "./"` 会错误地指向 `~/workspace`。
+
+`set -euo pipefail` 分别要求命令失败时停止、未定义变量时报错、Pipeline 中任一命令失败都算失败。`exec` 不再额外保留一个等待 Skynet 的 Bash Process，因此在 VS Code Terminal 按 `Ctrl+C` 时，SIGINT 直接到达 Skynet。
+
+在**终端 C**检查 Shell Syntax、换行和执行权限：
+
+```bash
+bash -n scripts/linux/run_server.sh
+file scripts/linux/run_server.sh
+chmod +x scripts/linux/run_server.sh
+test -x scripts/linux/run_server.sh && echo "RUN_SCRIPT_OK"
+```
+
+`bash -n` 没有输出表示 Syntax Check 通过；它不会真正启动 Server。`RUN_SCRIPT_OK` 表示 Linux Executable Bit 已设置。
+
+### 8.5 第一次运行并确认 Process 没有意外退出
+
+把当前 VS Code 集成终端重命名为 `MINI-SERVER`，在其中执行：
+
+```bash
+cd ~/workspace/skynet-mmo-arpg
+./scripts/linux/run_server.sh
+```
+
+日志中至少应出现：
+
+```text
+[Main] minimal bootstrap reached
+```
+
+终端随后仍被 Skynet 占用，没有重新出现 `$` 提示符，这是预期行为。Main Service 已经退出，但基础 Service 仍使 Process 存活。
+
+在同一个 VS Code WSL Workspace 中选择“终端 → 新建终端”，把新终端命名为 `INSPECT`，执行：
+
+```bash
+cd ~/workspace/skynet-mmo-arpg
+ps -ef | grep '[t]hird_party/skynet/skynet'
+```
+
+应看到参数中带有 `config/game.lua` 的 Skynet Process。回到 `MINI-SERVER` 按 `Ctrl+C`，再在 `INSPECT` 中执行相同的 `ps` 命令，此时不应再看到该 Process。
+
+如果运行后直接返回 `$`，先看退出前的最后一条错误，不要只重复启动。常见分层如下：
+
+| 错误特征 | 失败层 | 检查位置 |
+|---|---|---|
+| `Need a config file` | ELF 参数 | `run_server.sh` 是否传入 `config/game.lua` |
+| `config/game.lua: No such file` | Current Working Directory | 脚本的 `cd .../../..` |
+| 无法加载 `snlua` | C Service Module | `cpath` 和 `cservice/snlua.so` |
+| 无法加载 `loader.lua` | snlua 初始化 | `lualoader` |
+| 找不到 `bootstrap.lua` 或 `main.lua` | Service Loader | `luaservice` 的两个 Pattern 和顺序 |
+| `module 'skynet' not found` | Lua Module | `lua_path` |
+| `module 'skynet.core' not found` | Lua Native Module | `lua_cpath` 和 `luaclib/skynet.so` |
+
+### 8.6 沿源码还原这条最小启动链
+
+这次运行实际经过以下对象：
+
+```text
+MINI-SERVER Bash
+  exec third_party/skynet/skynet config/game.lua
+
+Skynet Process / 主线程
+  third_party/skynet/skynet-src/skynet_main.c::main
+  创建临时配置 Lua State
+  执行 config/game.lua
+  _init_env 写入 Skynet Environment
+  lua_close 销毁配置 State
+  调用 third_party/skynet/skynet-src/skynet_start.c::skynet_start
+
+Skynet Runtime
+  初始化 Handle、Global Queue、Timer、Socket 和 Worker Thread
+  skynet_context_new("snlua", "bootstrap")
+
+Bootstrap snlua Service / 独立 Lua State
+  third_party/skynet/service-src/service_snlua.c::snlua_create
+  third_party/skynet/service-src/service_snlua.c::init_cb
+  third_party/skynet/lualib/loader.lua
+  third_party/skynet/service/bootstrap.lua
+  创建基础 Service，再请求创建 start="main"
+
+Main snlua Service / 另一个独立 Lua State
+  再次执行 third_party/skynet/lualib/loader.lua
+  命中项目 service/main.lua
+  require "skynet"
+  skynet.start 的初始化 coroutine 输出日志
+  skynet.exit 只注销 Main Service
+```
+
+配置 State、Bootstrap State 和 Main State 是三个不同的 `lua_State`。普通 Global/Table 不会在它们之间共享。`start = "main"` 也不是 Lua `require "main"`：它是官方 Bootstrap 发起一次 Service 创建，最后得到一个新的 Service Handle、Mailbox 和 Lua State。
+
+Worker Thread 与 Main Service 没有永久绑定关系。初始化 coroutine 被某个 Worker 调度；它如果发生 yield，恢复时可能由另一个 Worker 继续执行。当前代码只有初始化和退出，没有共享业务状态，但从这一节开始就应把 Process、Worker、Service、Lua State 和 coroutine 分开观察。
+
+### 8.7 用 GDB确认 C Runtime 入口
+
+先确认 `MINI-SERVER` 已停止。下面命令仍在**终端 C**执行：
+
+```bash
+cd ~/workspace/skynet-mmo-arpg
+gdb --args ./third_party/skynet/skynet config/game.lua
+```
+
+进入 `(gdb)` 后输入：
+
+```gdb
+set pagination off
+break main
+break skynet_start
+run
+```
+
+停在 `main` 后检查 ELF 收到的配置参数：
+
+```gdb
+print argc
+print argv[1]
+continue
+```
+
+`argv[1]` 应指向 `config/game.lua`。停在 `skynet_start` 后执行：
+
+```gdb
+print config->thread
+print config->module_path
+print config->bootstrap
+continue
+```
+
+应分别观察到 `8`、`./third_party/skynet/cservice/?.so` 和 `snlua bootstrap`。看到 Main 日志后按 `Ctrl+C` 回到 GDB，结束本次 Process：
+
+```gdb
+kill
+quit
+```
+
+这里先验证配置进入 C Runtime 的边界。`snlua_create`、动态库 Pending Breakpoint 和各线程调用栈会在第 22 节继续处理；LuaPanda 也暂时不介入最小启动链。
+
+### 8.8 检查差异并提交可运行基线
+
+在**终端 C**执行：
 
 ```bash
 git status --short
@@ -697,7 +1042,7 @@ git commit -m "build: bootstrap minimal skynet service"
 git log --oneline --decorate --graph -n 5
 ```
 
-`third_party/skynet` 被 `.gitignore` 排除，Commit 保存的是可重复恢复依赖的脚本，不是本机下载结果。
+提交前的 `git diff --cached` 中应只有本节三个文件和前一节两个构建脚本，不应出现 `third_party/skynet`。第三方源码被 `.gitignore` 排除；Commit 保存固定版本和恢复方法，不保存本机编译目录。
 
 现在为 Login 垂直链路建立独立 Branch：
 
@@ -1652,7 +1997,7 @@ end)
 [Main] startup complete
 ```
 
-另开 Terminal：
+在 VS Code 中再新建一个**终端 C**实例：
 
 ```bash
 ss -ltnp | grep -E ':8888|:8000'
@@ -1813,9 +2158,27 @@ os.exit(0, true)
 
 ```bash
 #!/usr/bin/env bash
+
+# 上面的 Shebang 必须位于第一行；直接执行脚本时，Linux 会从 PATH 中
+# 找到 bash，并用它解释本文件。
+
+# 打开 Bash 严格模式：
+# -e：Client 启动命令返回非 0 时停止脚本，E2E 能收到失败退出码；
+# -u：读取未定义变量时报错；
+# -o pipefail：管道中任意一个命令失败，整条管道都算失败。
 set -euo pipefail
+
+# $0 是当前脚本的启动路径，dirname "$0" 取得 scripts/linux。
+# $(...) 是 Command Substitution，把 dirname 的输出放回 cd 命令。
+# /../.. 从 scripts/linux 向上两级回到仓库根目录，保证 Lua 相对路径正确。
+# 双引号避免路径中存在空格时被 Bash 拆成多个参数。
 cd "$(dirname "$0")/../.."
 
+# 使用 Skynet 自带的 Lua 5.4，而不是 Ubuntu System Lua。
+# $@ 表示传给当前脚本的全部位置参数；写成 "$@" 时，每个原始参数
+# 仍保持独立，参数内容中的空格也不会被再次拆分。
+# exec 用 Lua Process 替换当前 Script Process，PID 不变，退出码和 Signal
+# 可以直接传给 E2E Script 或当前 Terminal。
 exec ./third_party/skynet/3rd/lua/lua client/login_client.lua "$@"
 ```
 
@@ -1827,7 +2190,7 @@ chmod +x scripts/linux/run_client.sh
 
 ### 16.3 第一次手工 Login
 
-建立两个 VS Code Terminal，并重命名为 `SERVER` 和 `CLIENT`。
+在当前 WSL Workspace 中建立两个**终端 C**实例，并重命名为 `SERVER` 和 `CLIENT`。两者都应是 Ubuntu Bash，`pwd` 都应位于工程根目录。
 
 `SERVER`：
 
@@ -1871,7 +2234,7 @@ LOGIN_REJECTED code=1 message=AUTH_FAILED
 ss -ltnp | grep ':8888'
 ```
 
-如果 Server 报 `Address already in use`，不要重复启动；找到旧的 `SERVER` Terminal并用 `Ctrl+C` 停止。
+如果 Server 报 `Address already in use`，不要重复启动；找到旧的 `SERVER` 集成终端并用 `Ctrl+C` 停止。
 
 停止 Server 后提交：
 
@@ -1905,31 +2268,72 @@ storage_pool = 2
 
 ```bash
 #!/usr/bin/env bash
+
+# 上面的 Shebang 必须位于第一行；直接执行脚本时，Linux 会从 PATH 中
+# 找到 bash，并用它解释本文件。
+
+# 打开 Bash 严格模式：
+# -e：任意普通测试命令返回非 0 时停止脚本；
+# -u：读取未定义变量时报错；
+# -o pipefail：管道中任意一个命令失败，整条管道都算失败。
 set -euo pipefail
+
+# $0 是当前脚本的启动路径，dirname "$0" 取得 tests/integration。
+# $(...) 先执行 dirname，再把输出替换进 cd 的参数。
+# 本脚本位于 tests/integration/，/../.. 向上两级回到仓库根目录。
+# 双引号保护包含空格的路径，保证 cd 只接收一个完整参数。
 cd "$(dirname "$0")/../.."
 
+# $$ 是当前 Test Shell 的 PID。变量出现在双引号中仍会展开。
+# 把 PID 加入文件名，可避免两个并行测试相互覆盖日志。
+# 测试成功后删除这些文件；失败时保留，便于还原现场。
 SERVER_LOG="/tmp/skynet_mmo_arpg_server_$$.log"
 SUCCESS_LOG="/tmp/skynet_mmo_arpg_login_success_$$.log"
 REJECT_LOG="/tmp/skynet_mmo_arpg_login_reject_$$.log"
 
+# function_name() { ...; } 定义 Bash Function。这里只定义清理逻辑，
+# 当前执行流不会立刻进入函数体，直到后面的 trap 触发它。
 cleanup() {
+    # SERVER_PID 在 Server 成功启动前可能尚未赋值，${SERVER_PID:-} 可在 -u
+    # 模式下安全读取。[[ -n ... ]] 判断字符串非空，&& 要求左右条件都成功。
+    # kill -0 只检查该 PID 是否仍存活，不发送终止信号。
+    # 2>/dev/null 丢弃检查过程的 Standard Error。
     if [[ -n "${SERVER_PID:-}" ]] && kill -0 "$SERVER_PID" 2>/dev/null; then
+        # 只停止本脚本亲自启动的 PID，不使用 killall 误伤开发服务器。
+        # || true 表示即使 Process 已在检查后自行退出，也不要让清理失败
+        # 覆盖测试原本的退出原因。
         kill "$SERVER_PID" 2>/dev/null || true
+
+        # wait 等待并回收后台子进程，避免留下 Zombie。
         wait "$SERVER_PID" 2>/dev/null || true
     fi
 }
+
+# trap 把 cleanup 注册到 EXIT；无论正常结束、命令失败还是收到 Ctrl+C，
+# Shell 退出时都会调用该函数。
 trap cleanup EXIT
 
+# >"$SERVER_LOG" 把 Standard Output 写入日志并覆盖旧文件；
+# 2>&1 再让 Standard Error 指向当前 Standard Output，也进入同一个日志；
+# 行尾 & 让 Server 在后台运行，Test Shell 才能继续执行 Client。
+# $! 只保存刚刚启动的后台 Process PID。
 ./third_party/skynet/skynet config/test.lua >"$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
 
+# $(seq 1 50) 先生成 1 到 50；for 每次取一个值。
+# 变量名使用 _，表示循环序号本身不参与业务判断。
+# 最多轮询 50 次，每次 0.1 秒，总启动预算约 5 秒。
+# 既检查 Process 是否提前退出，也等待业务 Main 的 Ready Log。
 ready=false
 for _ in $(seq 1 50); do
+    # ! 对命令结果取反。kill -0 失败说明 Server PID 已经不存在。
     if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+        # >&2 把诊断写入 Standard Error，cat 随后输出完整 Server Log。
         echo "Server exited during startup" >&2
         cat "$SERVER_LOG"
         exit 1
     fi
+    # grep -q 只用退出码表示是否找到文本，不把匹配行重复打印出来。
     if grep -q "startup complete" "$SERVER_LOG"; then
         ready=true
         break
@@ -1937,19 +2341,25 @@ for _ in $(seq 1 50); do
     sleep 0.1
 done
 
+# 超时与 Process 提前退出分开报告；两者都打印 Server Log。
 if [[ "$ready" != true ]]; then
     echo "Server startup timeout" >&2
     cat "$SERVER_LOG"
     exit 1
 fi
 
+# 成功用例使用真实 TCP 端口。timeout 最多等待 10 秒，超时后返回非 0，
+# 防止协议或 Server 故障让 CI 永久挂起。行尾反斜杠连接下一物理行。
 timeout 10s ./scripts/linux/run_client.sh \
     --port=18888 \
     --player=10001 >"$SUCCESS_LOG" 2>&1
+
+# cat 回显 Client 现场；grep -q 用精确结果文本完成 Assertion。
 cat "$SUCCESS_LOG"
 grep -q "LOGIN_OK player_id=10001 name=Knight10001 level=10 gold=10000" \
     "$SUCCESS_LOG"
 
+# 拒绝用例验证 Auth 错误路径；Client 的 expect_code 让预期拒绝仍返回成功退出码。
 timeout 10s ./scripts/linux/run_client.sh \
     --port=18888 \
     --player=10001 \
@@ -1958,6 +2368,7 @@ timeout 10s ./scripts/linux/run_client.sh \
 cat "$REJECT_LOG"
 grep -q "LOGIN_REJECTED code=1 message=AUTH_FAILED" "$REJECT_LOG"
 
+# 只有两个 Assertion 都成功才删除日志并输出完成标记。
 rm -f "$SERVER_LOG" "$SUCCESS_LOG" "$REJECT_LOG"
 echo "LOGIN_E2E_OK"
 ```
@@ -1968,14 +2379,33 @@ echo "LOGIN_E2E_OK"
 
 ```bash
 #!/usr/bin/env bash
+
+# 上面的 Shebang 必须位于第一行；直接执行脚本时，Linux 会从 PATH 中
+# 找到 bash，并用它解释本文件。
+
+# 打开 Bash 严格模式：
+# -e：Build 或子测试返回非 0 时停止脚本，并把失败传给调用方；
+# -u：读取未定义变量时报错；
+# -o pipefail：管道中任意一个命令失败，整条管道都算失败。
 set -euo pipefail
+
+# $0 是当前脚本的启动路径，dirname "$0" 取得 scripts/linux。
+# $(...) 先执行 dirname，再把结果替换进 cd 命令。
+# /../.. 从 scripts/linux 向上两级回到仓库根目录。
+# 双引号避免路径中的空格触发 Bash Word Splitting。
 cd "$(dirname "$0")/../.."
 
+# [[ ... ]] 是 Bash 条件表达式；! 表示取反；-x 检查文件存在且可执行。
+# 新 Clone 尚未构建时自动编译；已有可执行 Runtime 时不重复构建。
 if [[ ! -x third_party/skynet/skynet ]]; then
     ./scripts/linux/build.sh
 fi
 
+# 当前阶段只有 Login E2E。后续 Unit Test、更多 Integration Test
+# 继续在这里按顺序加入，形成开发机和 CI 共用的单一入口。
 ./tests/integration/login_smoke.sh
+
+# 只有所有前置测试成功时才会输出总完成标记。
 echo "ALL_TESTS_OK"
 ```
 
@@ -2012,21 +2442,44 @@ git push
 
 ```bash
 #!/usr/bin/env bash
+
+# 上面的 Shebang 必须位于第一行；直接执行脚本时，Linux 会从 PATH 中
+# 找到 bash，并用它解释本文件。
+
+# 打开 Bash 严格模式：
+# -e：缺少命令或连接失败时停止脚本，并返回非 0；
+# -u：读取未定义变量时报错；
+# -o pipefail：管道中任意一个命令失败，整条管道都算失败。
 set -euo pipefail
+
+# $0 是当前脚本的启动路径，dirname "$0" 取得 scripts/linux。
+# $(...) 先执行 dirname，再把输出替换进 cd 命令。
+# /../.. 从 scripts/linux 向上两级回到仓库根目录。
+# 使用双引号，避免路径中的空格被拆成多个参数。
 cd "$(dirname "$0")/../.."
 
+# $1、$2 是第一、第二个位置参数。
+# ${变量:-默认值} 表示变量未提供或为空时使用右侧默认值。
+# 因此两个位置参数可以覆盖 Host 和 Port；不传参数时连接本机开发端口。
 HOST="${1:-127.0.0.1}"
 PORT="${2:-8000}"
 
+# command -v nc 查询 Shell 能否从 PATH 找到 nc；找到时返回 0。
+# ! 对返回结果取反，所以找不到时进入 then 分支。
+# >/dev/null 丢弃 Standard Output，2>&1 让 Standard Error 也指向 /dev/null。
 if ! command -v nc >/dev/null 2>&1; then
     echo "缺少 nc，请安装 netcat-openbsd" >&2
     exit 1
 fi
 
 echo "Connecting Debug Console ${HOST}:${PORT}; Ctrl+C exits."
+
+# rlwrap 不是连接必需品；存在时为 nc 增加历史和方向键行编辑。
 if command -v rlwrap >/dev/null 2>&1; then
     exec rlwrap nc "$HOST" "$PORT"
 fi
+
+# 没有 rlwrap 时直接运行 nc。exec 保证 Ctrl+C 直接交给前台连接进程。
 exec nc "$HOST" "$PORT"
 ```
 
@@ -2037,7 +2490,7 @@ chmod +x scripts/linux/debug_console.sh
 ./scripts/linux/run_server.sh
 ```
 
-另一个 Terminal：
+在另一个**终端 C**实例中执行：
 
 ```bash
 ./scripts/linux/debug_console.sh
@@ -2087,25 +2540,60 @@ LuaPanda 有三部分：WSL 侧 VS Code Extension 提供 Debug Adapter；`LuaPan
 
 ```bash
 #!/usr/bin/env bash
+
+# 上面的 Shebang 必须位于文件第一行。
+# 直接执行 ./scripts/bootstrap_luapanda.sh 时，Linux 会通过 /usr/bin/env
+# 从当前 PATH 中找到 bash，并用它解释这个文件。
+
+# 打开 Bash 严格模式：
+# -e：下载、版本检查或清理命令返回非 0 时停止脚本；
+# -u：读取未定义变量时报错；
+# -o pipefail：管道中任意一个命令失败，整条管道都算失败。
 set -euo pipefail
+
+# $0 是当前脚本的启动路径。
+# dirname "$0" 取得脚本所在的 scripts 目录。
+# $(...) 先执行括号里的命令，再把输出替换进 cd 的参数。
+# 本脚本位于 scripts/，所以 /.. 向上一级就是仓库根目录。
+# 使用双引号，避免路径中包含空格时被 Bash 拆成多个参数。
 cd "$(dirname "$0")/.."
 
+# LuaPanda 使用经过本课程验证的精确 Commit；LuaSocket 使用发布 Tag。
+# 不跟随浮动 Branch，避免以后重新搭环境得到行为不同的 Debug Runtime。
+# Bash 变量赋值的等号两侧不能有空格。
 LUAPANDA_COMMIT="e3ac3d3314f24cf939c36cac5b7dc1f2ed6ee129"
 LUASOCKET_TAG="v3.1.0"
 
+# 第三方依赖统一放在被 .gitignore 排除的工程私有目录中。
+# mkdir -p 在目录已存在时也返回成功，并按需创建缺失的 Parent Directory。
 mkdir -p third_party
 
+# remove_dependency() { ...; } 定义 Function，不会在定义位置立即执行。
 remove_dependency() {
+    # $1 是调用 Function 时的第一个位置参数。
+    # local 把变量限制在本次 Function 调用内，避免覆盖脚本同名变量。
     local target="$1"
     local parent
+
+    # realpath -m 即使目标尚不存在也会消除 .、.. 并得到规范化绝对路径。
+    # dirname 再取得目标的 Parent Directory。这里只允许清理 third_party
+    # 的直接子目录，防止变量错误把删除范围扩到工程外。
     parent="$(dirname "$(realpath -m "$target")")"
+
+    # [[ ... ]] 是 Bash 条件表达式，!= 对两个字符串做不等比较。
     if [[ "$parent" != "$(realpath third_party)" ]]; then
         echo "拒绝清理非 third_party 直接子目录：$target" >&2
         exit 1
     fi
+
+    # 路径边界已经在上面验证。-- 表示后续内容一定按 Path 处理，
+    # 即使 Path 意外以连字符开头，也不会被 rm 当成 Option。
     rm -rf -- "$target"
 }
 
+# ! 对判断结果取反，-f 检查目标是否为普通文件。
+# Debugger 主文件不存在时重建 LuaPanda 目录。
+# 上游仓库较大，这里只 Fetch 指定 Commit，不下载完整历史。
 if [[ ! -f third_party/luapanda/Debugger/LuaPanda.lua ]]; then
     remove_dependency third_party/luapanda
     git init third_party/luapanda
@@ -2115,6 +2603,8 @@ if [[ ! -f third_party/luapanda/Debugger/LuaPanda.lua ]]; then
     git -C third_party/luapanda checkout --detach FETCH_HEAD
 fi
 
+# LuaSocket 按发布 Tag 做 Shallow Clone。它稍后会针对 Skynet Bundled Lua
+# 的 Header 和 ABI 编译，不能用 Ubuntu System Lua 的预编译 Package 替代。
 if [[ ! -f third_party/luasocket/src/makefile ]]; then
     remove_dependency third_party/luasocket
     git clone --branch "$LUASOCKET_TAG" --depth 1 \
@@ -2122,9 +2612,11 @@ if [[ ! -f third_party/luasocket/src/makefile ]]; then
         third_party/luasocket
 fi
 
+# 即使目录和关键文件已经存在，也必须核对实际版本，防止复用错误依赖。
 actual_luapanda="$(git -C third_party/luapanda rev-parse HEAD)"
 actual_luasocket="$(git -C third_party/luasocket describe --tags --exact-match)"
 
+# 两项都采用精确相等比较。版本不符时保留现场，不自动覆盖人工修改。
 if [[ "$actual_luapanda" != "$LUAPANDA_COMMIT" ]]; then
     echo "LuaPanda commit mismatch: $actual_luapanda" >&2
     exit 1
@@ -2149,27 +2641,54 @@ LuaPanda 固定 Commit，不跟随浮动 Branch。`remove_dependency` 在删除�
 
 ```bash
 #!/usr/bin/env bash
+
+# 上面的 Shebang 必须位于第一行；直接执行脚本时，Linux 会从 PATH 中
+# 找到 bash，并用它解释本文件。
+
+# 打开 Bash 严格模式：
+# -e：依赖获取、Native Build、复制或 Runtime Test 失败时停止脚本；
+# -u：读取未定义变量时报错；
+# -o pipefail：管道中任意一个命令失败，整条管道都算失败。
 set -euo pipefail
+
+# $0 是当前脚本的启动路径，dirname "$0" 取得 scripts/linux。
+# $(...) 先执行 dirname，再把输出替换进 cd 命令。
+# /../.. 从 scripts/linux 向上两级回到仓库根目录。
+# 使用双引号，避免路径中的空格触发 Bash 参数拆分。
 cd "$(dirname "$0")/../.."
 
+# 恢复并验证固定版本的 LuaPanda 与 LuaSocket 源码。
 ./scripts/bootstrap_luapanda.sh
 
+# [[ ... ]] 是 Bash 条件表达式；! 表示取反；-f 判断普通文件是否存在。
+# LuaSocket 编译需要 Skynet Bundled Lua 的 Header；尚未构建时先构建 Skynet。
 if [[ ! -f third_party/skynet/3rd/lua/lua.h ]]; then
     ./scripts/linux/build.sh
 fi
 
+# pwd -P 返回消除 Symbolic Link 后的绝对路径。
+# $(...) 是前面已经解释过的 Command Substitution；这里把 pwd 输出与后续
+# 路径拼接成绝对路径，避免子 Makefile 按自己的工作目录解释相对路径。
 LUA_INCLUDE="$(pwd -P)/third_party/skynet/3rd/lua"
 RUNTIME_ROOT="$(pwd -P)/third_party/luapanda-runtime"
 
+# make -C 先把 Make 的工作目录切换到 LuaSocket src，不改变当前 Shell。
+# 后面的 NAME=value 是传给 Makefile 的变量覆盖：选择 Linux Target、
+# Lua 5.4，并指定 Skynet Bundled Lua Header。反斜杠连接下一物理行。
+# 这里只构建工程私有产物，不执行会污染系统目录的 make install。
 make -C third_party/luasocket/src linux \
     PLAT=linux \
     LUAV=5.4 \
     LUAINC_linux="$LUA_INCLUDE"
 
+# mkdir -p 会创建缺失的多级目录，目录已存在时不报错。
+# Lua 的 require "socket.core" 会把 Module Name 映射到 socket/core.so。
+# LuaSocket 上游产物名不同，因此复制到 LuaPanda 私有 Runtime 的目标布局。
 mkdir -p "$RUNTIME_ROOT/luaclib/socket"
 cp third_party/luasocket/src/socket-3.0.0.so \
     "$RUNTIME_ROOT/luaclib/socket/core.so"
 
+# 立即用同一个 Bundled Lua 做加载测试，不能只以编译命令成功作为验收。
 ./tests/tooling/test_luapanda_runtime.sh
 ```
 
@@ -2179,17 +2698,39 @@ cp third_party/luasocket/src/socket-3.0.0.so \
 
 ```bash
 #!/usr/bin/env bash
+
+# 上面的 Shebang 必须位于第一行；直接执行脚本时，Linux 会从 PATH 中
+# 找到 bash，并用它解释本文件。
+
+# 打开 Bash 严格模式：
+# -e：文件检查、Native Module 加载或 API Assertion 失败时停止脚本；
+# -u：读取未定义变量时报错；
+# -o pipefail：管道中任意一个命令失败，整条管道都算失败。
 set -euo pipefail
+
+# $0 是当前脚本的启动路径，dirname "$0" 取得 tests/tooling。
+# $(...) 先执行 dirname，再把输出替换进 cd 命令。
+# /../.. 从 tests/tooling 向上两级回到仓库根目录。
+# 使用双引号，避免路径中的空格被 Bash 拆成多个参数。
 cd "$(dirname "$0")/../.."
 
+# 使用绝对路径，保证测试不会受调用者目录或 Symbolic Link 影响。
 RUNTIME_ROOT="$(pwd -P)/third_party/luapanda-runtime"
 CORE_MODULE="$RUNTIME_ROOT/luaclib/socket/core.so"
 
+# [[ ... ]] 是 Bash 条件表达式，! 表示取反，-f 判断普通文件是否存在。
+# 先给出明确的缺失文件诊断，避免 require 只打印一长串搜索路径。
 if [[ ! -f "$CORE_MODULE" ]]; then
     echo "missing LuaPanda runtime: $CORE_MODULE" >&2
     exit 1
 fi
 
+# 把 NAME=value 写在单条命令前，只为随后启动的 Lua Process 设置 Environment，
+# 不会 export 到当前 Shell，也不会影响下一条命令。
+# 只对这个 Test Process 临时设置 LUA_CPATH，不污染用户 Shell。
+# 末尾的 ;; 要求 Lua 在这条自定义路径之后继续追加 Default C Path。
+# 反斜杠把三行连接成一条命令；Lua 的 -e 直接执行后面的代码字符串。
+# assert 使 require 失败或缺少 tcp Constructor 时以非 0 状态退出。
 LUA_CPATH="$RUNTIME_ROOT/luaclib/?.so;;" \
     ./third_party/skynet/3rd/lua/lua -e \
     'local s = assert(require "socket.core"); assert(type(s.tcp) == "function")'
@@ -2273,22 +2814,48 @@ luapanda_port = "$LUAPANDA_PORT"
 
 ```bash
 #!/usr/bin/env bash
+
+# 上面的 Shebang 必须位于第一行；直接执行脚本时，Linux 会从 PATH 中
+# 找到 bash，并用它解释本文件。
+
+# 打开 Bash 严格模式：
+# -e：Debug 依赖准备或 Server 启动命令失败时停止脚本；
+# -u：读取未定义变量时报错；
+# -o pipefail：管道中任意一个命令失败，整条管道都算失败。
 set -euo pipefail
+
+# $0 是当前脚本的启动路径，dirname "$0" 取得 scripts/linux。
+# $(...) 先执行 dirname，再把输出替换进 cd 命令。
+# /../.. 从 scripts/linux 向上两级回到仓库根目录。
+# 使用双引号，避免路径中的空格被 Bash 拆成多个参数。
 cd "$(dirname "$0")/../.."
 
+# $1、$2 是第一、第二个位置参数。
+# ${变量:-默认值} 在参数未提供或为空时使用右侧默认值。
+# 第一个参数选择唯一接入 LuaPanda 的 Service Name；第二个参数是 Adapter
+# Port。默认调试 Watchdog，不让所有 Service 竞争同一端口。
 TARGET_SERVICE="${1:-gateway/watchdog}"
 TARGET_PORT="${2:-8818}"
 
+# [[ ... ]] 是 Bash 条件表达式；! 对 -f 的文件判断取反；
+# || 表示左右任一条件成立就进入 then；反斜杠连接下一物理行。
+# Debugger Lua 文件或 socket.core 任一缺失时，恢复并构建完整 Debug Runtime。
 if [[ ! -f third_party/luapanda/Debugger/LuaPanda.lua \
     || ! -f third_party/luapanda-runtime/luaclib/socket/core.so ]]; then
     ./scripts/linux/build_luapanda.sh
 fi
 
+# export 把 Shell Variable 放入后续 Child Process 的 Environment。
+# config/debug_luapanda.lua 使用 $NAME 语法读取这些值。
+# 它们只影响本脚本以及随后 exec 出来的 Skynet Process，不写入系统配置。
 export LUAPANDA_SERVICE="$TARGET_SERVICE"
 export LUAPANDA_HOST="127.0.0.1"
 export LUAPANDA_PORT="$TARGET_PORT"
 
 echo "LuaPanda target=$LUAPANDA_SERVICE adapter=$LUAPANDA_HOST:$LUAPANDA_PORT"
+
+# 只有这条显式 Debug 入口使用 debug_luapanda.lua。普通 Server 和 Test
+# 仍使用不加载 Debugger 的配置。exec 让 VS Code 直接管理 Skynet Process。
 exec ./third_party/skynet/skynet config/debug_luapanda.lua
 ```
 
@@ -2498,7 +3065,7 @@ ss -ltnp | grep -E ':8888|:8818' || true
 ps -ef | grep '[s]kynet'
 ```
 
-优先回到对应 Terminal 按 `Ctrl+C`，不要用不限定目标的 `killall`。
+优先回到对应的 VS Code WSL 集成终端按 `Ctrl+C`，不要用不限定目标的 `killall`。
 
 ### 21.1 Watchdog Login 断点
 
@@ -2522,21 +3089,21 @@ local agent, is_new, load_error = skynet.call(
 ARPG Lua：Watchdog Login
 ```
 
-F5 会先执行 `ARPG：准备 LuaPanda`，再启动 `run_luapanda_server.sh gateway/watchdog 8818`。等待服务器 Terminal 同时出现：
+F5 会先执行 `ARPG：准备 LuaPanda`，再启动 `run_luapanda_server.sh gateway/watchdog 8818`。等待 VS Code 启动的服务器集成终端出现：
 
 ```text
 [LuaPanda] target=gateway/watchdog ... coroutine_hook=ready
 [Main] startup complete
 ```
 
-新建并重命名一个 Terminal 为 `LOGIN-CLIENT`：
+在同一个 WSL Workspace 中新建一个**终端 C**实例，并重命名为 `LOGIN-CLIENT`：
 
 ```bash
 cd ~/workspace/skynet-mmo-arpg
 ./scripts/linux/run_client.sh --player=10001
 ```
 
-必须在 `LOGIN-CLIENT` 输入命令。LuaPanda 启动出来的 Terminal 是 Server，不接收 Client 命令。
+必须在 `LOGIN-CLIENT` 输入命令。LuaPanda 启动出来的集成终端运行 Server，不接收 Client 命令。
 
 命中第一个断点后检查：
 
@@ -2655,7 +3222,7 @@ print config->bootstrap
 continue
 ```
 
-应看到 `8`、`third_party/skynet/cservice/?.so` 和 `snlua bootstrap`。
+应看到 `8`、`./third_party/skynet/cservice/?.so` 和 `snlua bootstrap`。
 
 `skynet_context_new` 会多次命中。检查：
 
@@ -2861,13 +3428,13 @@ ALL_TESTS_OK
 
 ## 手工运行 Login
 
-终端 A：
+VS Code WSL 集成终端 `SERVER`：
 
 ```bash
 ./scripts/linux/run_server.sh
 ```
 
-终端 B：
+另一个 VS Code WSL 集成终端 `CLIENT`：
 
 ```bash
 ./scripts/linux/run_client.sh --player=10001
